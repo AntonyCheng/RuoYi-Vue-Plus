@@ -4,7 +4,9 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.exception.ServiceException;
+import org.dromara.common.core.utils.StreamUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.workflow.domain.WfTaskBackNode;
@@ -29,6 +31,7 @@ import static org.dromara.workflow.common.constant.FlowConstant.USER_TASK;
  * @author may
  * @date 2024-03-13
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class WfTaskBackNodeServiceImpl implements IWfTaskBackNodeService {
@@ -54,7 +57,7 @@ public class WfTaskBackNodeServiceImpl implements IWfTaskBackNodeService {
             wfTaskBackNode.setOrderNo(0);
             wfTaskBackNodeMapper.insert(wfTaskBackNode);
         } else {
-            WfTaskBackNode taskNode = list.stream().filter(e -> e.getNodeId().equals(wfTaskBackNode.getNodeId()) && e.getOrderNo() == 0).findFirst().orElse(null);
+            WfTaskBackNode taskNode = StreamUtils.findFirst(list, e -> e.getNodeId().equals(wfTaskBackNode.getNodeId()) && e.getOrderNo() == 0);
             if (ObjectUtil.isEmpty(taskNode)) {
                 wfTaskBackNode.setOrderNo(list.get(0).getOrderNo() + 1);
                 WfTaskBackNode node = getListByInstanceIdAndNodeId(wfTaskBackNode.getInstanceId(), wfTaskBackNode.getNodeId());
@@ -104,12 +107,12 @@ public class WfTaskBackNodeServiceImpl implements IWfTaskBackNodeService {
                     }
                 }
                 if (CollUtil.isNotEmpty(ids)) {
-                    wfTaskBackNodeMapper.deleteBatchIds(ids);
+                    wfTaskBackNodeMapper.deleteByIds(ids);
                 }
             }
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             throw new ServiceException("删除失败");
         }
     }
