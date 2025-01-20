@@ -1,11 +1,11 @@
 package org.dromara.system.domain;
 
 import com.baomidou.mybatisplus.annotation.*;
-import org.dromara.common.core.constant.UserConstants;
-import org.dromara.common.tenant.core.TenantEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.dromara.common.core.constant.SystemConstants;
+import org.dromara.common.tenant.core.TenantEntity;
 
 import java.util.Date;
 
@@ -83,7 +83,7 @@ public class SysUser extends TenantEntity {
     private String status;
 
     /**
-     * 删除标志（0代表存在 2代表删除）
+     * 删除标志（0代表存在 1代表删除）
      */
     @TableLogic
     private String delFlag;
@@ -109,7 +109,7 @@ public class SysUser extends TenantEntity {
     }
 
     public boolean isSuperAdmin() {
-        return UserConstants.SUPER_ADMIN_ID.equals(this.userId);
+        return SystemConstants.SUPER_ADMIN_ID.equals(this.userId);
     }
 
 }

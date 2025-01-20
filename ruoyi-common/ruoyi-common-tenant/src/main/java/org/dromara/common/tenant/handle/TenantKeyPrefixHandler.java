@@ -27,15 +27,20 @@ public class TenantKeyPrefixHandler extends KeyPrefixHandler {
         if (StringUtils.isBlank(name)) {
             return null;
         }
-        if (InterceptorIgnoreHelper.willIgnoreTenantLine("")) {
-            return super.map(name);
+        try {
+            if (InterceptorIgnoreHelper.willIgnoreTenantLine("")) {
+                return super.map(name);
+            }
+        } catch (NoClassDefFoundError ignore) {
+            // 有些服务不需要mp导致类不存在 忽略即可
         }
         if (StringUtils.contains(name, GlobalConstants.GLOBAL_REDIS_KEY)) {
             return super.map(name);
         }
         String tenantId = TenantHelper.getTenantId();
         if (StringUtils.isBlank(tenantId)) {
-            log.error("无法获取有效的租户id -> Null");
+            log.debug("无法获取有效的租户id -> Null");
+            return super.map(name);
         }
         if (StringUtils.startsWith(name, tenantId + "")) {
             // 如果存在则直接返回
@@ -53,15 +58,20 @@ public class TenantKeyPrefixHandler extends KeyPrefixHandler {
         if (StringUtils.isBlank(unmap)) {
             return null;
         }
-        if (InterceptorIgnoreHelper.willIgnoreTenantLine("")) {
-            return super.unmap(name);
+        try {
+            if (InterceptorIgnoreHelper.willIgnoreTenantLine("")) {
+                return unmap;
+            }
+        } catch (NoClassDefFoundError ignore) {
+            // 有些服务不需要mp导致类不存在 忽略即可
         }
         if (StringUtils.contains(name, GlobalConstants.GLOBAL_REDIS_KEY)) {
-            return super.unmap(name);
+            return unmap;
         }
         String tenantId = TenantHelper.getTenantId();
         if (StringUtils.isBlank(tenantId)) {
-            log.error("无法获取有效的租户id -> Null");
+            log.debug("无法获取有效的租户id -> Null");
+            return unmap;
         }
         if (StringUtils.startsWith(unmap, tenantId + "")) {
             // 如果存在则删除

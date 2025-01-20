@@ -100,7 +100,7 @@ public class LogAspect {
 
             if (e != null) {
                 operLog.setStatus(BusinessStatus.FAIL.ordinal());
-                operLog.setErrorMsg(StringUtils.substring(e.getMessage(), 0, 2000));
+                operLog.setErrorMsg(StringUtils.substring(e.getMessage(), 0, 3800));
             }
             // 设置方法名称
             String className = joinPoint.getTarget().getClass().getName();
@@ -113,13 +113,12 @@ public class LogAspect {
             // 设置消耗时间
             StopWatch stopWatch = KEY_CACHE.get();
             stopWatch.stop();
-            operLog.setCostTime(stopWatch.getTime());
+            operLog.setCostTime(stopWatch.getDuration().toMillis());
             // 发布事件保存数据库
             SpringUtils.context().publishEvent(operLog);
         } catch (Exception exp) {
             // 记录本地异常日志
             log.error("异常信息:{}", exp.getMessage());
-            exp.printStackTrace();
         } finally {
             KEY_CACHE.remove();
         }
@@ -146,7 +145,7 @@ public class LogAspect {
         }
         // 是否需要保存response，参数和值
         if (log.isSaveResponseData() && ObjectUtil.isNotNull(jsonResult)) {
-            operLog.setJsonResult(StringUtils.substring(JsonUtils.toJsonString(jsonResult), 0, 2000));
+            operLog.setJsonResult(StringUtils.substring(JsonUtils.toJsonString(jsonResult), 0, 3800));
         }
     }
 
@@ -159,14 +158,13 @@ public class LogAspect {
     private void setRequestValue(JoinPoint joinPoint, OperLogEvent operLog, String[] excludeParamNames) throws Exception {
         Map<String, String> paramsMap = ServletUtils.getParamMap(ServletUtils.getRequest());
         String requestMethod = operLog.getRequestMethod();
-        if (MapUtil.isEmpty(paramsMap)
-                && HttpMethod.PUT.name().equals(requestMethod) || HttpMethod.POST.name().equals(requestMethod)) {
+        if (MapUtil.isEmpty(paramsMap) && StringUtils.equalsAny(requestMethod, HttpMethod.PUT.name(), HttpMethod.POST.name(), HttpMethod.DELETE.name())) {
             String params = argsArrayToString(joinPoint.getArgs(), excludeParamNames);
-            operLog.setOperParam(StringUtils.substring(params, 0, 2000));
+            operLog.setOperParam(StringUtils.substring(params, 0, 3800));
         } else {
             MapUtil.removeAny(paramsMap, EXCLUDE_PROPERTIES);
             MapUtil.removeAny(paramsMap, excludeParamNames);
-            operLog.setOperParam(StringUtils.substring(JsonUtils.toJsonString(paramsMap), 0, 2000));
+            operLog.setOperParam(StringUtils.substring(JsonUtils.toJsonString(paramsMap), 0, 3800));
         }
     }
 

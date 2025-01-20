@@ -2,15 +2,17 @@ package org.dromara.system.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
+import org.dromara.common.core.constant.CacheNames;
 import org.dromara.common.core.utils.StreamUtils;
-import org.dromara.common.mybatis.helper.DataBaseHelper;
 import org.dromara.system.domain.SysDept;
 import org.dromara.system.domain.SysRoleDept;
 import org.dromara.system.mapper.SysDeptMapper;
 import org.dromara.system.mapper.SysRoleDeptMapper;
 import org.dromara.system.service.ISysDataScopeService;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,8 +38,12 @@ public class SysDataScopeServiceImpl implements ISysDataScopeService {
      * @param roleId 角色Id
      * @return 部门Id组
      */
+    @Cacheable(cacheNames = CacheNames.SYS_ROLE_CUSTOM, key = "#roleId", condition = "#roleId != null")
     @Override
     public String getRoleCustom(Long roleId) {
+        if (ObjectUtil.isNull(roleId)) {
+            return "-1";
+        }
         List<SysRoleDept> list = roleDeptMapper.selectList(
             new LambdaQueryWrapper<SysRoleDept>()
                 .select(SysRoleDept::getDeptId)
@@ -45,7 +51,7 @@ public class SysDataScopeServiceImpl implements ISysDataScopeService {
         if (CollUtil.isNotEmpty(list)) {
             return StreamUtils.join(list, rd -> Convert.toStr(rd.getDeptId()));
         }
-        return null;
+        return "-1";
     }
 
     /**
@@ -54,17 +60,19 @@ public class SysDataScopeServiceImpl implements ISysDataScopeService {
      * @param deptId 部门Id
      * @return 部门Id组
      */
+    @Cacheable(cacheNames = CacheNames.SYS_DEPT_AND_CHILD, key = "#deptId", condition = "#deptId != null")
     @Override
     public String getDeptAndChild(Long deptId) {
-        List<SysDept> deptList = deptMapper.selectList(new LambdaQueryWrapper<SysDept>()
-            .select(SysDept::getDeptId)
-            .apply(DataBaseHelper.findInSet(deptId, "ancestors")));
+        if (ObjectUtil.isNull(deptId)) {
+            return "-1";
+        }
+        List<SysDept> deptList = deptMapper.selectListByParentId(deptId);
         List<Long> ids = StreamUtils.toList(deptList, SysDept::getDeptId);
         ids.add(deptId);
         if (CollUtil.isNotEmpty(ids)) {
             return StreamUtils.join(ids, Convert::toStr);
         }
-        return null;
+        return "-1";
     }
 
 }

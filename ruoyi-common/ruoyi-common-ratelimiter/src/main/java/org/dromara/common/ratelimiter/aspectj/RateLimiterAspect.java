@@ -54,13 +54,14 @@ public class RateLimiterAspect {
     public void doBefore(JoinPoint point, RateLimiter rateLimiter) {
         int time = rateLimiter.time();
         int count = rateLimiter.count();
+        int timeout = rateLimiter.timeout();
         try {
             String combineKey = getCombineKey(rateLimiter, point);
             RateType rateType = RateType.OVERALL;
             if (rateLimiter.limitType() == LimitType.CLUSTER) {
                 rateType = RateType.PER_CLIENT;
             }
-            long number = RedisUtils.rateLimiter(combineKey, rateType, count, time);
+            long number = RedisUtils.rateLimiter(combineKey, rateType, count, time, timeout);
             if (number == -1) {
                 String message = rateLimiter.message();
                 if (StringUtils.startsWith(message, "{") && StringUtils.endsWith(message, "}")) {
@@ -80,11 +81,11 @@ public class RateLimiterAspect {
 
     private String getCombineKey(RateLimiter rateLimiter, JoinPoint point) {
         String key = rateLimiter.key();
-        if (StringUtils.isNotBlank(key)) {
+        // 判断 key 不为空 和 不是表达式
+        if (StringUtils.isNotBlank(key) && StringUtils.containsAny(key, "#")) {
             MethodSignature signature = (MethodSignature) point.getSignature();
             Method targetMethod = signature.getMethod();
             Object[] args = point.getArgs();
-            //noinspection DataFlowIssue
             MethodBasedEvaluationContext context =
                 new MethodBasedEvaluationContext(null, targetMethod, args, pnd);
             context.setBeanResolver(new BeanFactoryResolver(SpringUtils.getBeanFactory()));

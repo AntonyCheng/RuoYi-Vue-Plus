@@ -4,18 +4,20 @@ import cn.dev33.satoken.exception.NotLoginException;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.lang.Opt;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.lock.annotation.Lock4j;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.zhyd.oauth.model.AuthUser;
+import org.dromara.common.core.constant.CacheConstants;
 import org.dromara.common.core.constant.Constants;
-import org.dromara.common.core.constant.GlobalConstants;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.core.constant.TenantConstants;
+import org.dromara.common.core.domain.dto.PostDTO;
 import org.dromara.common.core.domain.dto.RoleDTO;
 import org.dromara.common.core.domain.model.LoginUser;
 import org.dromara.common.core.enums.LoginType;
-import org.dromara.common.core.enums.TenantStatus;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.exception.user.UserException;
 import org.dromara.common.core.utils.*;
@@ -59,6 +61,7 @@ public class SysLoginService {
     private final ISysSocialService sysSocialService;
     private final ISysRoleService roleService;
     private final ISysDeptService deptService;
+    private final ISysPostService postService;
     private final SysUserMapper userMapper;
 
 
@@ -147,24 +150,24 @@ public class SysLoginService {
      */
     public LoginUser buildLoginUser(SysUserVo user) {
         LoginUser loginUser = new LoginUser();
+        Long userId = user.getUserId();
         loginUser.setTenantId(user.getTenantId());
-        loginUser.setUserId(user.getUserId());
+        loginUser.setUserId(userId);
         loginUser.setDeptId(user.getDeptId());
         loginUser.setUsername(user.getUserName());
         loginUser.setNickname(user.getNickName());
         loginUser.setUserType(user.getUserType());
-        loginUser.setMenuPermission(permissionService.getMenuPermission(user.getUserId()));
-        loginUser.setRolePermission(permissionService.getRolePermission(user.getUserId()));
-        TenantHelper.dynamic(user.getTenantId(), () -> {
-            SysDeptVo dept = null;
-            if (ObjectUtil.isNotNull(user.getDeptId())) {
-                dept = deptService.selectDeptById(user.getDeptId());
-            }
-            loginUser.setDeptName(ObjectUtil.isNull(dept) ? "" : dept.getDeptName());
-            loginUser.setDeptCategory(ObjectUtil.isNull(dept) ? "" : dept.getDeptCategory());
-            List<SysRoleVo> roles = roleService.selectRolesByUserId(user.getUserId());
-            loginUser.setRoles(BeanUtil.copyToList(roles, RoleDTO.class));
-        });
+        loginUser.setMenuPermission(permissionService.getMenuPermission(userId));
+        loginUser.setRolePermission(permissionService.getRolePermission(userId));
+        if (ObjectUtil.isNotNull(user.getDeptId())) {
+            Opt<SysDeptVo> deptOpt = Opt.of(user.getDeptId()).map(deptService::selectDeptById);
+            loginUser.setDeptName(deptOpt.map(SysDeptVo::getDeptName).orElse(StringUtils.EMPTY));
+            loginUser.setDeptCategory(deptOpt.map(SysDeptVo::getDeptCategory).orElse(StringUtils.EMPTY));
+        }
+        List<SysRoleVo> roles = roleService.selectRolesByUserId(userId);
+        List<SysPostVo> posts = postService.selectPostsByUserId(userId);
+        loginUser.setRoles(BeanUtil.copyToList(roles, RoleDTO.class));
+        loginUser.setPosts(BeanUtil.copyToList(posts, PostDTO.class));
         return loginUser;
     }
 
@@ -186,7 +189,7 @@ public class SysLoginService {
      * 登录校验
      */
     public void checkLogin(LoginType loginType, String tenantId, String username, Supplier<Boolean> supplier) {
-        String errorKey = GlobalConstants.PWD_ERR_CNT_KEY + username;
+        String errorKey = CacheConstants.PWD_ERR_CNT_KEY + username;
         String loginFail = Constants.LOGIN_FAIL;
 
         // 获取用户登录错误次数，默认为0 (可自定义限制策略 例如: key + username + ip)
@@ -225,17 +228,17 @@ public class SysLoginService {
         if (!TenantHelper.isEnable()) {
             return;
         }
-        if (TenantConstants.DEFAULT_TENANT_ID.equals(tenantId)) {
-            return;
-        }
         if (StringUtils.isBlank(tenantId)) {
             throw new TenantException("tenant.number.not.blank");
+        }
+        if (TenantConstants.DEFAULT_TENANT_ID.equals(tenantId)) {
+            return;
         }
         SysTenantVo tenant = tenantService.queryByTenantId(tenantId);
         if (ObjectUtil.isNull(tenant)) {
             log.info("登录租户：{} 不存在.", tenantId);
             throw new TenantException("tenant.not.exists");
-        } else if (TenantStatus.DISABLE.getCode().equals(tenant.getStatus())) {
+        } else if (SystemConstants.DISABLE.equals(tenant.getStatus())) {
             log.info("登录租户：{} 已被停用.", tenantId);
             throw new TenantException("tenant.blocked");
         } else if (ObjectUtil.isNotNull(tenant.getExpireTime())

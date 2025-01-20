@@ -2,23 +2,29 @@ package org.dromara.common.web.handler;
 
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.http.HttpStatus;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.exception.ServiceException;
+import org.dromara.common.core.exception.SseException;
 import org.dromara.common.core.exception.base.BaseException;
 import org.dromara.common.core.utils.StreamUtils;
+import org.dromara.common.json.utils.JsonUtils;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import java.io.IOException;
 
 /**
  * 全局异常处理器
@@ -48,6 +54,27 @@ public class GlobalExceptionHandler {
         log.error(e.getMessage());
         Integer code = e.getCode();
         return ObjectUtil.isNotNull(code) ? R.fail(code, e.getMessage()) : R.fail(e.getMessage());
+    }
+
+    /**
+     * 认证失败
+     */
+    @ResponseStatus(org.springframework.http.HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(SseException.class)
+    public String handleNotLoginException(SseException e, HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        log.debug("请求地址'{}',认证失败'{}',无法访问系统资源", requestURI, e.getMessage());
+        return JsonUtils.toJsonString(R.fail(HttpStatus.HTTP_UNAUTHORIZED, "认证失败，无法访问系统资源"));
+    }
+
+    /**
+     * servlet异常
+     */
+    @ExceptionHandler(ServletException.class)
+    public R<Void> handleServletException(ServletException e, HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        log.error("请求地址'{}',发生未知异常.", requestURI, e);
+        return R.fail(e.getMessage());
     }
 
     /**
@@ -87,6 +114,20 @@ public class GlobalExceptionHandler {
         String requestURI = request.getRequestURI();
         log.error("请求地址'{}'不存在.", requestURI);
         return R.fail(HttpStatus.HTTP_NOT_FOUND, e.getMessage());
+    }
+
+    /**
+     * 拦截未知的运行时异常
+     */
+    @ResponseStatus(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(IOException.class)
+    public void handleRuntimeException(IOException e, HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        if (requestURI.contains("sse")) {
+            // sse 经常性连接中断 例如关闭浏览器 直接屏蔽
+            return;
+        }
+        log.error("请求地址'{}',连接中断", requestURI, e);
     }
 
     /**
@@ -135,7 +176,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public R<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error(e.getMessage());
-        String message = e.getBindingResult().getFieldError().getDefaultMessage();
+        String message = StreamUtils.join(e.getBindingResult().getAllErrors(), DefaultMessageSourceResolvable::getDefaultMessage, ", ");
         return R.fail(message);
     }
 

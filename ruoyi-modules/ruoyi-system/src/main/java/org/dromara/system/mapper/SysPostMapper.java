@@ -19,6 +19,13 @@ import java.util.List;
  */
 public interface SysPostMapper extends BaseMapperPlus<SysPost, SysPostVo> {
 
+    /**
+     * 分页查询岗位列表
+     *
+     * @param page         分页对象
+     * @param queryWrapper 查询条件
+     * @return 包含岗位信息的分页结果
+     */
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
         @DataColumn(key = "userName", value = "create_by")

@@ -7,10 +7,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.dromara.common.core.constant.CacheNames;
-import org.dromara.common.core.constant.UserConstants;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.service.ConfigService;
 import org.dromara.common.core.utils.MapstructUtils;
+import org.dromara.common.core.utils.ObjectUtils;
 import org.dromara.common.core.utils.SpringUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -72,10 +73,7 @@ public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
     public String selectConfigByKey(String configKey) {
         SysConfig retConfig = baseMapper.selectOne(new LambdaQueryWrapper<SysConfig>()
             .eq(SysConfig::getConfigKey, configKey));
-        if (ObjectUtil.isNotNull(retConfig)) {
-            return retConfig.getConfigValue();
-        }
-        return StringUtils.EMPTY;
+        return ObjectUtils.notNullGetter(retConfig, SysConfig::getConfigValue, StringUtils.EMPTY);
     }
 
     /**
@@ -173,7 +171,7 @@ public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
     public void deleteConfigByIds(Long[] configIds) {
         for (Long configId : configIds) {
             SysConfig config = baseMapper.selectById(configId);
-            if (StringUtils.equals(UserConstants.YES, config.getConfigType())) {
+            if (StringUtils.equals(SystemConstants.YES, config.getConfigType())) {
                 throw new ServiceException(String.format("内置参数【%1$s】不能删除 ", config.getConfigKey()));
             }
             CacheUtils.evict(CacheNames.SYS_CONFIG, config.getConfigKey());
@@ -197,7 +195,7 @@ public class SysConfigServiceImpl implements ISysConfigService, ConfigService {
      */
     @Override
     public boolean checkConfigKeyUnique(SysConfigBo config) {
-        long configId = ObjectUtil.isNull(config.getConfigId()) ? -1L : config.getConfigId();
+        long configId = ObjectUtils.notNull(config.getConfigId(), -1L);
         SysConfig info = baseMapper.selectOne(new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getConfigKey, config.getConfigKey()));
         if (ObjectUtil.isNotNull(info) && info.getConfigId() != configId) {
             return false;

@@ -26,6 +26,14 @@ public interface ISysPostService {
     List<SysPostVo> selectPostList(SysPostBo post);
 
     /**
+     * 查询用户所属岗位组
+     *
+     * @param userId 用户ID
+     * @return 岗位ID
+     */
+    List<SysPostVo> selectPostsByUserId(Long userId);
+
+    /**
      * 查询所有岗位
      *
      * @return 岗位列表
@@ -79,6 +87,14 @@ public interface ISysPostService {
      * @return 结果
      */
     long countUserPostById(Long postId);
+
+    /**
+     * 通过部门ID查询岗位使用数量
+     *
+     * @param deptId 部门id
+     * @return 结果
+     */
+    long countPostByDeptId(Long deptId);
 
     /**
      * 删除岗位信息

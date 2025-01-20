@@ -2,7 +2,7 @@ create table sys_social
 (
     id                 bigint            NOT NULL,
     user_id            bigint            NOT NULL,
-    tenant_id          nvarchar(20)      NULL,
+    tenant_id          nvarchar(20)      DEFAULT ('000000') NULL,
     auth_id            nvarchar(255)     NOT NULL,
     source             nvarchar(255)     NOT NULL,
     open_id            nvarchar(255)     NULL,
@@ -175,7 +175,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'oauth_token_secret'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_social',
     'COLUMN', N'del_flag'
@@ -210,7 +210,11 @@ EXEC sys.sp_addextendedproperty
     'TABLE', N'sys_social',
     'COLUMN', N'update_time'
 GO
-
+EXEC sp_addextendedproperty
+    'MS_Description', N'社会化关系表',
+    'SCHEMA', N'dbo',
+    'TABLE', N'sys_social'
+GO
 
 CREATE TABLE sys_tenant
 (
@@ -326,7 +330,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_tenant',
     'COLUMN', N'del_flag'
@@ -423,7 +427,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_tenant_package',
     'COLUMN', N'del_flag'
@@ -1013,7 +1017,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_dept',
     'COLUMN', N'del_flag'
@@ -2002,10 +2006,10 @@ CREATE TABLE sys_oper_log
     oper_url       nvarchar(255)  DEFAULT ''    NULL,
     oper_ip        nvarchar(128)  DEFAULT ''    NULL,
     oper_location  nvarchar(255)  DEFAULT ''    NULL,
-    oper_param     nvarchar(2000) DEFAULT ''    NULL,
-    json_result    nvarchar(2000) DEFAULT ''    NULL,
+    oper_param     nvarchar(4000) DEFAULT ''    NULL,
+    json_result    nvarchar(4000) DEFAULT ''    NULL,
     status         int            DEFAULT ((0)) NULL,
-    error_msg      nvarchar(2000) DEFAULT ''    NULL,
+    error_msg      nvarchar(4000) DEFAULT ''    NULL,
     oper_time      datetime2(7)                 NULL,
     cost_time      bigint         DEFAULT ((0)) NULL,
     CONSTRAINT PK__sys_oper__34723BF9BD954573 PRIMARY KEY CLUSTERED (oper_id)
@@ -2338,7 +2342,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_role',
     'COLUMN', N'del_flag'
@@ -2723,7 +2727,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）' ,
+    'MS_Description', N'删除标志（0代表存在 1代表删除）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_user',
     'COLUMN', N'del_flag'
@@ -3202,7 +3206,7 @@ EXEC sp_addextendedproperty
     'COLUMN', N'status'
 GO
 EXEC sp_addextendedproperty
-    'MS_Description', N'删除标志（0代表存在 2代表删除）',
+    'MS_Description', N'删除标志（0代表存在 1代表删除）',
     'SCHEMA', N'dbo',
     'TABLE', N'sys_client',
     'COLUMN', N'del_flag'

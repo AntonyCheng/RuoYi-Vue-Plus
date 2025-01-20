@@ -17,7 +17,6 @@ import jakarta.validation.constraints.NotBlank;
  *
  * @author Lion Li
  */
-
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("gen_table_column")
@@ -160,7 +159,7 @@ public class GenTableColumn extends BaseEntity {
     }
 
     public boolean isEdit() {
-        return isInsert(this.isEdit);
+        return isEdit(this.isEdit);
     }
 
     public boolean isEdit(String isEdit) {

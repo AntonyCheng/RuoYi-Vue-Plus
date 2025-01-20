@@ -3,7 +3,7 @@ package org.dromara.system.controller.system;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.hutool.core.convert.Convert;
 import lombok.RequiredArgsConstructor;
-import org.dromara.common.core.constant.UserConstants;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.log.annotation.Log;
@@ -12,6 +12,7 @@ import org.dromara.common.web.core.BaseController;
 import org.dromara.system.domain.bo.SysDeptBo;
 import org.dromara.system.domain.vo.SysDeptVo;
 import org.dromara.system.service.ISysDeptService;
+import org.dromara.system.service.ISysPostService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,7 @@ import java.util.List;
 public class SysDeptController extends BaseController {
 
     private final ISysDeptService deptService;
+    private final ISysPostService postService;
 
     /**
      * 获取部门列表
@@ -92,7 +94,7 @@ public class SysDeptController extends BaseController {
             return R.fail("修改部门'" + dept.getDeptName() + "'失败，部门名称已存在");
         } else if (dept.getParentId().equals(deptId)) {
             return R.fail("修改部门'" + dept.getDeptName() + "'失败，上级部门不能是自己");
-        } else if (StringUtils.equals(UserConstants.DEPT_DISABLE, dept.getStatus())) {
+        } else if (StringUtils.equals(SystemConstants.DISABLE, dept.getStatus())) {
             if (deptService.selectNormalChildrenDeptById(deptId) > 0) {
                 return R.fail("该部门包含未停用的子部门!");
             } else if (deptService.checkDeptExistUser(deptId)) {
@@ -116,6 +118,9 @@ public class SysDeptController extends BaseController {
         }
         if (deptService.checkDeptExistUser(deptId)) {
             return R.warn("部门存在用户,不允许删除");
+        }
+        if (postService.countPostByDeptId(deptId) > 0) {
+            return R.warn("部门存在岗位,不允许删除");
         }
         deptService.checkDeptDataScope(deptId);
         return toAjax(deptService.deleteDeptById(deptId));

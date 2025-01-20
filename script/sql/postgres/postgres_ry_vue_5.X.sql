@@ -5,7 +5,7 @@ create table sys_social
 (
     id                 int8             not null,
     user_id            int8             not null,
-    tenant_id          varchar(20)      default null::varchar,
+    tenant_id          varchar(20)      default '000000'::varchar,
     auth_id            varchar(255)     not null,
     source             varchar(255)     not null,
     open_id            varchar(255)     default null::varchar,
@@ -64,7 +64,7 @@ comment on column  sys_social.create_by         is '创建者';
 comment on column  sys_social.create_time       is '创建时间';
 comment on column  sys_social.update_by         is '更新者';
 comment on column  sys_social.update_time       is '更新时间';
-comment on column  sys_social.del_flag          is '删除标志（0代表存在 2代表删除）';
+comment on column  sys_social.del_flag          is '删除标志（0代表存在 1代表删除）';
 
 -- ----------------------------
 -- 租户表
@@ -109,7 +109,7 @@ comment on column  sys_tenant.package_id         is '租户套餐编号';
 comment on column  sys_tenant.expire_time        is '过期时间';
 comment on column  sys_tenant.account_count      is '用户数量（-1不限制）';
 comment on column  sys_tenant.status             is '租户状态（0正常 1停用）';
-comment on column  sys_tenant.del_flag           is '删除标志（0代表存在 2代表删除）';
+comment on column  sys_tenant.del_flag           is '删除标志（0代表存在 1代表删除）';
 comment on column  sys_tenant.create_dept        is '创建部门';
 comment on column  sys_tenant.create_by          is '创建者';
 comment on column  sys_tenant.create_time        is '创建时间';
@@ -151,7 +151,7 @@ comment on column  sys_tenant_package.package_name       is '套餐名称';
 comment on column  sys_tenant_package.menu_ids           is '关联菜单id';
 comment on column  sys_tenant_package.remark             is '备注';
 comment on column  sys_tenant_package.status             is '状态（0正常 1停用）';
-comment on column  sys_tenant_package.del_flag           is '删除标志（0代表存在 2代表删除）';
+comment on column  sys_tenant_package.del_flag           is '删除标志（0代表存在 1代表删除）';
 comment on column  sys_tenant_package.create_dept        is '创建部门';
 comment on column  sys_tenant_package.create_by          is '创建者';
 comment on column  sys_tenant_package.create_time        is '创建时间';
@@ -196,7 +196,7 @@ comment on column sys_dept.leader       is '负责人';
 comment on column sys_dept.phone        is '联系电话';
 comment on column sys_dept.email        is '邮箱';
 comment on column sys_dept.status       is '部门状态（0正常 1停用）';
-comment on column sys_dept.del_flag     is '删除标志（0代表存在 2代表删除）';
+comment on column sys_dept.del_flag     is '删除标志（0代表存在 1代表删除）';
 comment on column sys_dept.create_dept  is '创建部门';
 comment on column sys_dept.create_by    is '创建者';
 comment on column sys_dept.create_time  is '创建时间';
@@ -259,7 +259,7 @@ comment on column sys_user.sex          is '用户性别（0男 1女 2未知）'
 comment on column sys_user.avatar       is '头像地址';
 comment on column sys_user.password     is '密码';
 comment on column sys_user.status       is '帐号状态（0正常 1停用）';
-comment on column sys_user.del_flag     is '删除标志（0代表存在 2代表删除）';
+comment on column sys_user.del_flag     is '删除标志（0代表存在 1代表删除）';
 comment on column sys_user.login_ip     is '最后登陆IP';
 comment on column sys_user.login_date   is '最后登陆时间';
 comment on column sys_user.create_dept  is '创建部门';
@@ -357,7 +357,7 @@ comment on column sys_role.data_scope           is '数据范围（1：全部数
 comment on column sys_role.menu_check_strictly  is '菜单树选择项是否关联显示';
 comment on column sys_role.dept_check_strictly  is '部门树选择项是否关联显示';
 comment on column sys_role.status               is '角色状态（0正常 1停用）';
-comment on column sys_role.del_flag             is '删除标志（0代表存在 2代表删除）';
+comment on column sys_role.del_flag             is '删除标志（0代表存在 1代表删除）';
 comment on column sys_role.create_dept          is '创建部门';
 comment on column sys_role.create_by            is '创建者';
 comment on column sys_role.create_time          is '创建时间';
@@ -427,7 +427,7 @@ comment on column sys_menu.remark       is '备注';
 -- ----------------------------
 -- 一级菜单
 insert into sys_menu values('1', '系统管理', '0', '1', 'system',           null, '', '1', '0', 'M', '0', '0', '', 'system',   103, 1, now(), null, null, '系统管理目录');
-insert into sys_menu values('6', '系统管理', '0', '2', 'tenant',           null, '', '1', '0', 'M', '0', '0', '', 'chart',    103, 1, now(), null, null, '租户管理目录');
+insert into sys_menu values('6', '租户管理', '0', '2', 'tenant',           null, '', '1', '0', 'M', '0', '0', '', 'chart',    103, 1, now(), null, null, '租户管理目录');
 insert into sys_menu values('2', '系统监控', '0', '3', 'monitor',          null, '', '1', '0', 'M', '0', '0', '', 'monitor',  103, 1, now(), null, null, '系统监控目录');
 insert into sys_menu values('3', '系统工具', '0', '4', 'tool',             null, '', '1', '0', 'M', '0', '0', '', 'tool',     103, 1, now(), null, null, '系统工具目录');
 insert into sys_menu values('4', 'PLUS官网', '0', '5', 'https://gitee.com/dromara/RuoYi-Vue-Plus', null, '', '0', '0', 'M', '0', '0', '', 'guide',    103, 1, now(), null, null, 'RuoYi-Vue-Plus官网地址');
@@ -741,10 +741,10 @@ create table if not exists sys_oper_log
     oper_url       varchar(255)  default ''::varchar,
     oper_ip        varchar(128)  default ''::varchar,
     oper_location  varchar(255)  default ''::varchar,
-    oper_param     varchar(2000) default ''::varchar,
-    json_result    varchar(2000) default ''::varchar,
+    oper_param     varchar(4000) default ''::varchar,
+    json_result    varchar(4000) default ''::varchar,
     status         int4          default 0,
-    error_msg      varchar(2000) default ''::varchar,
+    error_msg      varchar(4000) default ''::varchar,
     oper_time      timestamp,
     cost_time      int8          default 0,
     constraint sys_oper_log_pk primary key (oper_id)
@@ -1209,7 +1209,7 @@ comment on column sys_oss_config.remark         is '备注';
 insert into sys_oss_config values (1, '000000', 'minio',  'ruoyi',            'ruoyi123',        'ruoyi',             '', '127.0.0.1:9000',                      '','N', '',            '1', '0', '', 103, 1, now(), 1, now(), null);
 insert into sys_oss_config values (2, '000000', 'qiniu',  'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi',             '', 's3-cn-north-1.qiniucs.com',           '','N', '',            '1', '1', '', 103, 1, now(), 1, now(), null);
 insert into sys_oss_config values (3, '000000', 'aliyun', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi',             '', 'oss-cn-beijing.aliyuncs.com',         '','N', '',            '1', '1', '', 103, 1, now(), 1, now(), null);
-insert into sys_oss_config values (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi-1250000000',  '', 'cos.ap-beijing.myqcloud.com',         '','N', 'ap-beijing',  '1', '1', '', 103, 1, now(), 1, now(), null);
+insert into sys_oss_config values (4, '000000', 'qcloud', 'XXXXXXXXXXXXXXX',  'XXXXXXXXXXXXXXX', 'ruoyi-1240000000',  '', 'cos.ap-beijing.myqcloud.com',         '','N', 'ap-beijing',  '1', '1', '', 103, 1, now(), 1, now(), null);
 insert into sys_oss_config values (5, '000000', 'image',  'ruoyi',            'ruoyi123',        'ruoyi',             'image', '127.0.0.1:9000',                 '','N', '',            '1', '1', '', 103, 1, now(), 1, now(), NULL);
 
 -- ----------------------------
@@ -1244,7 +1244,7 @@ comment on column sys_client.device_type            is '设备类型';
 comment on column sys_client.active_timeout         is 'token活跃超时时间';
 comment on column sys_client.timeout                is 'token固定超时';
 comment on column sys_client.status                 is '状态（0正常 1停用）';
-comment on column sys_client.del_flag               is '删除标志（0代表存在 2代表删除）';
+comment on column sys_client.del_flag               is '删除标志（0代表存在 1代表删除）';
 comment on column sys_client.create_dept            is '创建部门';
 comment on column sys_client.create_by              is '创建者';
 comment on column sys_client.create_time            is '创建时间';

@@ -2,12 +2,12 @@ package org.dromara.system.domain.vo;
 
 import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
 import com.alibaba.excel.annotation.ExcelProperty;
-import org.dromara.common.core.constant.UserConstants;
+import io.github.linpeilie.annotations.AutoMapper;
+import lombok.Data;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.excel.annotation.ExcelDictFormat;
 import org.dromara.common.excel.convert.ExcelDictConvert;
 import org.dromara.system.domain.SysRole;
-import io.github.linpeilie.annotations.AutoMapper;
-import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -94,7 +94,7 @@ public class SysRoleVo implements Serializable {
     private boolean flag = false;
 
     public boolean isSuperAdmin() {
-        return UserConstants.SUPER_ADMIN_ID.equals(this.roleId);
+        return SystemConstants.SUPER_ADMIN_ID.equals(this.roleId);
     }
 
 }

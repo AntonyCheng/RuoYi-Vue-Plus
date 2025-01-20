@@ -8,10 +8,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.constant.Constants;
 import org.dromara.common.core.constant.GlobalConstants;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.core.domain.model.LoginUser;
 import org.dromara.common.core.domain.model.SmsLoginBody;
 import org.dromara.common.core.enums.LoginType;
-import org.dromara.common.core.enums.UserStatus;
 import org.dromara.common.core.exception.user.CaptchaExpireException;
 import org.dromara.common.core.exception.user.UserException;
 import org.dromara.common.core.utils.MessageUtils;
@@ -21,7 +21,6 @@ import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.redis.utils.RedisUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.common.tenant.helper.TenantHelper;
-import org.dromara.system.domain.SysClient;
 import org.dromara.system.domain.SysUser;
 import org.dromara.system.domain.vo.SysClientVo;
 import org.dromara.system.domain.vo.SysUserVo;
@@ -51,13 +50,12 @@ public class SmsAuthStrategy implements IAuthStrategy {
         String tenantId = loginBody.getTenantId();
         String phonenumber = loginBody.getPhonenumber();
         String smsCode = loginBody.getSmsCode();
-
-        // 通过手机号查找用户
-        SysUserVo user = loadUserByPhonenumber(tenantId, phonenumber);
-
-        loginService.checkLogin(LoginType.SMS, tenantId, user.getUserName(), () -> !validateSmsCode(tenantId, phonenumber, smsCode));
-        // 此处可根据登录用户的数据不同 自行创建 loginUser 属性不够用继承扩展就行了
-        LoginUser loginUser = loginService.buildLoginUser(user);
+        LoginUser loginUser = TenantHelper.dynamic(tenantId, () -> {
+            SysUserVo user = loadUserByPhonenumber(phonenumber);
+            loginService.checkLogin(LoginType.SMS, tenantId, user.getUserName(), () -> !validateSmsCode(tenantId, phonenumber, smsCode));
+            // 此处可根据登录用户的数据不同 自行创建 loginUser 属性不够用继承扩展就行了
+            return loginService.buildLoginUser(user);
+        });
         loginUser.setClientKey(client.getClientKey());
         loginUser.setDeviceType(client.getDeviceType());
         SaLoginModel model = new SaLoginModel();
@@ -89,18 +87,16 @@ public class SmsAuthStrategy implements IAuthStrategy {
         return code.equals(smsCode);
     }
 
-    private SysUserVo loadUserByPhonenumber(String tenantId, String phonenumber) {
-        return TenantHelper.dynamic(tenantId, () -> {
-            SysUserVo user = userMapper.selectVoOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhonenumber, phonenumber));
-            if (ObjectUtil.isNull(user)) {
-                log.info("登录用户：{} 不存在.", phonenumber);
-                throw new UserException("user.not.exists", phonenumber);
-            } else if (UserStatus.DISABLE.getCode().equals(user.getStatus())) {
-                log.info("登录用户：{} 已被停用.", phonenumber);
-                throw new UserException("user.blocked", phonenumber);
-            }
-            return user;
-        });
+    private SysUserVo loadUserByPhonenumber(String phonenumber) {
+        SysUserVo user = userMapper.selectVoOne(new LambdaQueryWrapper<SysUser>().eq(SysUser::getPhonenumber, phonenumber));
+        if (ObjectUtil.isNull(user)) {
+            log.info("登录用户：{} 不存在.", phonenumber);
+            throw new UserException("user.not.exists", phonenumber);
+        } else if (SystemConstants.DISABLE.equals(user.getStatus())) {
+            log.info("登录用户：{} 已被停用.", phonenumber);
+            throw new UserException("user.blocked", phonenumber);
+        }
+        return user;
     }
 
 }

@@ -10,53 +10,52 @@
 
     <name>RuoYi-Vue-Plus</name>
     <url>https://gitee.com/dromara/RuoYi-Vue-Plus</url>
-    <description>RuoYi-Vue-Plus多租户管理系统</description>
+    <description>Dromara RuoYi-Vue-Plus多租户管理系统</description>
 
     <properties>
-        <revision>5.2.1</revision>
-        <spring-boot.version>3.2.6</spring-boot.version>
+        <revision>5.3.0-BETA</revision>
+        <spring-boot.version>3.4.1</spring-boot.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>17</java.version>
         <mybatis.version>3.5.16</mybatis.version>
-        <springdoc.version>2.5.0</springdoc.version>
+        <springdoc.version>2.8.3</springdoc.version>
         <therapi-javadoc.version>0.15.0</therapi-javadoc.version>
-        <poi.version>5.2.3</poi.version>
-        <easyexcel.version>3.3.4</easyexcel.version>
+        <easyexcel.version>4.0.3</easyexcel.version>
         <velocity.version>2.3</velocity.version>
-        <satoken.version>1.38.0</satoken.version>
-        <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <satoken.version>1.39.0</satoken.version>
+        <mybatis-plus.version>3.5.10</mybatis-plus.version>
         <p6spy.version>3.9.1</p6spy.version>
-        <hutool.version>5.8.27</hutool.version>
-        <okhttp.version>4.10.0</okhttp.version>
-        <spring-boot-admin.version>3.2.3</spring-boot-admin.version>
-        <redisson.version>3.31.0</redisson.version>
+        <hutool.version>5.8.35</hutool.version>
+        <spring-boot-admin.version>3.4.1</spring-boot-admin.version>
+        <redisson.version>3.43.0</redisson.version>
         <lock4j.version>2.2.7</lock4j.version>
         <dynamic-ds.version>4.3.1</dynamic-ds.version>
-        <alibaba-ttl.version>2.14.4</alibaba-ttl.version>
-        <snailjob.version>1.0.1</snailjob.version>
-        <mapstruct-plus.version>1.3.6</mapstruct-plus.version>
+        <snailjob.version>1.3.0-beta1.1</snailjob.version>
+        <mapstruct-plus.version>1.4.6</mapstruct-plus.version>
         <mapstruct-plus.lombok.version>0.2.0</mapstruct-plus.lombok.version>
-        <lombok.version>1.18.32</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <bouncycastle.version>1.76</bouncycastle.version>
-        <justauth.version>1.16.6</justauth.version>
+        <justauth.version>1.16.7</justauth.version>
         <!-- 离线IP地址定位库 -->
         <ip2region.version>2.7.0</ip2region.version>
 
         <!-- OSS 配置 -->
-        <aws.sdk.version>2.25.15</aws.sdk.version>
-        <aws.crt.version>0.29.13</aws.crt.version>
+        <aws.sdk.version>2.28.22</aws.sdk.version>
+        <aws.crt.version>0.31.3</aws.crt.version>
         <!-- SMS 配置 -->
-        <sms4j.version>3.2.1</sms4j.version>
+        <sms4j.version>3.3.3</sms4j.version>
         <!-- 限制框架中的fastjson版本 -->
         <fastjson.version>1.2.83</fastjson.version>
+        <!-- 面向运行时的D-ORM依赖 -->
+        <anyline.version>8.7.2-20250101</anyline.version>
         <!--工作流配置-->
-        <flowable.version>7.0.0</flowable.version>
+        <warm-flow.version>1.6.0-m5</warm-flow.version>
 
         <!-- 插件版本 -->
         <maven-jar-plugin.version>3.2.2</maven-jar-plugin.version>
         <maven-war-plugin.version>3.2.2</maven-war-plugin.version>
-        <maven-compiler-plugin.verison>3.11.0</maven-compiler-plugin.verison>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
         <flatten-maven-plugin.version>1.3.0</flatten-maven-plugin.version>
     </properties>
@@ -68,6 +67,8 @@
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>local</profiles.active>
                 <logging.level>info</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
         </profile>
         <profile>
@@ -76,6 +77,8 @@
                 <!-- 环境标识，需要与配置文件的名称相对应 -->
                 <profiles.active>dev</profiles.active>
                 <logging.level>info</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
             <activation>
                 <!-- 默认环境 -->
@@ -87,6 +90,8 @@
             <properties>
                 <profiles.active>prod</profiles.active>
                 <logging.level>warn</logging.level>
+                <monitor.username>ruoyi</monitor.username>
+                <monitor.password>123456</monitor.password>
             </properties>
         </profile>
     </profiles>
@@ -113,12 +118,16 @@
                 <scope>import</scope>
             </dependency>
 
+            <!-- Warm-Flow国产工作流引擎, 在线文档：http://warm-flow.cn/ -->
             <dependency>
-                <groupId>org.flowable</groupId>
-                <artifactId>flowable-bom</artifactId>
-                <version>${flowable.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
+                <groupId>org.dromara.warm</groupId>
+                <artifactId>warm-flow-mybatis-plus-sb3-starter</artifactId>
+                <version>${warm-flow.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.dromara.warm</groupId>
+                <artifactId>warm-flow-plugin-ui-sb-web</artifactId>
+                <version>${warm-flow.version}</version>
             </dependency>
 
             <!-- JustAuth 的依赖配置-->
@@ -156,25 +165,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi</artifactId>
-                <version>${poi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.poi</groupId>
-                <artifactId>poi-ooxml</artifactId>
-                <version>${poi.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.alibaba</groupId>
                 <artifactId>easyexcel</artifactId>
                 <version>${easyexcel.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.poi</groupId>
-                        <artifactId>poi-ooxml-schemas</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <!-- velocity代码生成使用模板 -->
@@ -229,6 +222,12 @@
 
             <dependency>
                 <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-jsqlparser</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-annotation</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
@@ -238,12 +237,6 @@
                 <groupId>p6spy</groupId>
                 <artifactId>p6spy</artifactId>
                 <version>${p6spy.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.squareup.okhttp3</groupId>
-                <artifactId>okhttp</artifactId>
-                <version>${okhttp.version}</version>
             </dependency>
 
             <!--  AWS SDK for Java 2.x  -->
@@ -307,12 +300,6 @@
                 <version>${snailjob.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>com.alibaba</groupId>
-                <artifactId>transmittable-thread-local</artifactId>
-                <version>${alibaba-ttl.version}</version>
-            </dependency>
-
             <!-- 加密包引入 -->
             <dependency>
                 <groupId>org.bouncycastle</groupId>
@@ -331,6 +318,12 @@
                 <groupId>org.lionsoul</groupId>
                 <artifactId>ip2region</artifactId>
                 <version>${ip2region.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>2.15.0</version>
             </dependency>
 
             <dependency>
@@ -386,7 +379,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>${maven-compiler-plugin.verison}</version>
+                <version>${maven-compiler-plugin.version}</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.dromara.common.core.domain.model.LoginUser;
 import org.dromara.common.core.exception.ServiceException;
+import org.dromara.common.core.utils.ObjectUtils;
 import org.dromara.common.mybatis.core.domain.BaseEntity;
 import org.dromara.common.satoken.utils.LoginHelper;
 
@@ -31,8 +32,7 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
         try {
             if (ObjectUtil.isNotNull(metaObject) && metaObject.getOriginalObject() instanceof BaseEntity baseEntity) {
                 // 获取当前时间作为创建时间和更新时间，如果创建时间不为空，则使用创建时间，否则使用当前时间
-                Date current = ObjectUtil.isNotNull(baseEntity.getCreateTime())
-                    ? baseEntity.getCreateTime() : new Date();
+                Date current = ObjectUtils.notNull(baseEntity.getCreateTime(), new Date());
                 baseEntity.setCreateTime(current);
                 baseEntity.setUpdateTime(current);
 
@@ -44,10 +44,13 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                         // 填充创建人、更新人和创建部门信息
                         baseEntity.setCreateBy(userId);
                         baseEntity.setUpdateBy(userId);
-                        baseEntity.setCreateDept(ObjectUtil.isNotNull(baseEntity.getCreateDept())
-                            ? baseEntity.getCreateDept() : loginUser.getDeptId());
+                        baseEntity.setCreateDept(ObjectUtils.notNull(baseEntity.getCreateDept(), loginUser.getDeptId()));
                     }
                 }
+            } else {
+                Date date = new Date();
+                this.strictInsertFill(metaObject, "createTime", Date.class, date);
+                this.strictInsertFill(metaObject, "updateTime", Date.class, date);
             }
         } catch (Exception e) {
             throw new ServiceException("自动注入异常 => " + e.getMessage(), HttpStatus.HTTP_UNAUTHORIZED);
@@ -72,6 +75,8 @@ public class InjectionMetaObjectHandler implements MetaObjectHandler {
                 if (ObjectUtil.isNotNull(userId)) {
                     baseEntity.setUpdateBy(userId);
                 }
+            } else {
+                this.strictUpdateFill(metaObject, "updateTime", Date.class, new Date());
             }
         } catch (Exception e) {
             throw new ServiceException("自动注入异常 => " + e.getMessage(), HttpStatus.HTTP_UNAUTHORIZED);

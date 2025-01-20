@@ -2,6 +2,7 @@ package org.dromara.web.controller;
 
 import cn.dev33.satoken.annotation.SaIgnore;
 import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.codec.Base64;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
@@ -12,7 +13,7 @@ import me.zhyd.oauth.model.AuthResponse;
 import me.zhyd.oauth.model.AuthUser;
 import me.zhyd.oauth.request.AuthRequest;
 import me.zhyd.oauth.utils.AuthStateUtils;
-import org.dromara.common.core.constant.UserConstants;
+import org.dromara.common.core.constant.SystemConstants;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.domain.model.LoginBody;
 import org.dromara.common.core.domain.model.RegisterBody;
@@ -24,9 +25,9 @@ import org.dromara.common.satoken.utils.LoginHelper;
 import org.dromara.common.social.config.properties.SocialLoginConfigProperties;
 import org.dromara.common.social.config.properties.SocialProperties;
 import org.dromara.common.social.utils.SocialUtils;
+import org.dromara.common.sse.dto.SseMessageDto;
+import org.dromara.common.sse.utils.SseMessageUtils;
 import org.dromara.common.tenant.helper.TenantHelper;
-import org.dromara.common.websocket.dto.WebSocketMessageDto;
-import org.dromara.common.websocket.utils.WebSocketUtils;
 import org.dromara.system.domain.bo.SysTenantBo;
 import org.dromara.system.domain.vo.SysClientVo;
 import org.dromara.system.domain.vo.SysTenantVo;
@@ -92,7 +93,7 @@ public class AuthController {
         if (ObjectUtil.isNull(client) || !StringUtils.contains(client.getGrantType(), grantType)) {
             log.info("客户端id: {} 认证类型：{} 异常!.", clientId, grantType);
             return R.fail(MessageUtils.message("auth.grant.type.error"));
-        } else if (!UserConstants.NORMAL.equals(client.getStatus())) {
+        } else if (!SystemConstants.NORMAL.equals(client.getStatus())) {
             return R.fail(MessageUtils.message("auth.grant.type.blocked"));
         }
         // 校验租户
@@ -102,16 +103,16 @@ public class AuthController {
 
         Long userId = LoginHelper.getUserId();
         scheduledExecutorService.schedule(() -> {
-            WebSocketMessageDto dto = new WebSocketMessageDto();
+            SseMessageDto dto = new SseMessageDto();
             dto.setMessage("欢迎登录RuoYi-Vue-Plus后台管理系统");
-            dto.setSessionKeys(List.of(userId));
-            WebSocketUtils.publishMessage(dto);
-        }, 3, TimeUnit.SECONDS);
+            dto.setUserIds(List.of(userId));
+            SseMessageUtils.publishMessage(dto);
+        }, 5, TimeUnit.SECONDS);
         return R.ok(loginVo);
     }
 
     /**
-     * 第三方登录请求
+     * 获取跳转URL
      *
      * @param source 登录来源
      * @return 结果
@@ -133,13 +134,15 @@ public class AuthController {
     }
 
     /**
-     * 第三方登录回调业务处理 绑定授权
+     * 前端回调绑定授权(需要token)
      *
      * @param loginBody 请求体
      * @return 结果
      */
     @PostMapping("/social/callback")
     public R<Void> socialCallback(@RequestBody SocialLoginBody loginBody) {
+        // 校验token
+        StpUtil.checkLogin();
         // 获取第三方登录信息
         AuthResponse<AuthUser> response = SocialUtils.loginAuth(
                 loginBody.getSource(), loginBody.getSocialCode(),
@@ -155,12 +158,14 @@ public class AuthController {
 
 
     /**
-     * 取消授权
+     * 取消授权(需要token)
      *
      * @param socialId socialId
      */
     @DeleteMapping(value = "/unlock/{socialId}")
     public R<Void> unlockSocial(@PathVariable Long socialId) {
+        // 校验token
+        StpUtil.checkLogin();
         Boolean rows = socialUserService.deleteWithValidById(socialId);
         return rows ? R.ok() : R.fail("取消授权失败");
     }
@@ -226,7 +231,7 @@ public class AuthController {
         }
         // 根据域名进行筛选
         List<TenantListVo> list = StreamUtils.filter(voList, vo ->
-                StringUtils.equals(vo.getDomain(), host));
+            StringUtils.equalsIgnoreCase(vo.getDomain(), host));
         result.setVoList(CollUtil.isNotEmpty(list) ? list : voList);
         return R.ok(result);
     }
