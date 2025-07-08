@@ -16,10 +16,17 @@ import java.util.List;
 public interface ISysUserService {
 
 
+    /**
+     * 根据条件分页查询用户列表
+     *
+     * @param user      用户信息
+     * @param pageQuery 发呢也
+     * @return 用户信息
+     */
     TableDataInfo<SysUserVo> selectPageUserList(SysUserBo user, PageQuery pageQuery);
 
     /**
-     * 根据条件分页查询用户列表
+     * 导出用户列表
      *
      * @param user 用户信息
      * @return 用户信息集合信息
@@ -29,7 +36,8 @@ public interface ISysUserService {
     /**
      * 根据条件分页查询已分配用户角色列表
      *
-     * @param user 用户信息
+     * @param user      用户信息
+     * @param pageQuery 分页
      * @return 用户信息集合信息
      */
     TableDataInfo<SysUserVo> selectAllocatedList(SysUserBo user, PageQuery pageQuery);
@@ -37,7 +45,8 @@ public interface ISysUserService {
     /**
      * 根据条件分页查询未分配用户角色列表
      *
-     * @param user 用户信息
+     * @param user      用户信息
+     * @param pageQuery 分页
      * @return 用户信息集合信息
      */
     TableDataInfo<SysUserVo> selectUnallocatedList(SysUserBo user, PageQuery pageQuery);

@@ -1,17 +1,16 @@
 package org.dromara.workflow.domain.vo;
 
-import com.alibaba.excel.annotation.ExcelIgnoreUnannotated;
-import com.alibaba.excel.annotation.ExcelProperty;
+import cn.idev.excel.annotation.ExcelIgnoreUnannotated;
+import cn.idev.excel.annotation.ExcelProperty;
 import io.github.linpeilie.annotations.AutoMapper;
 import lombok.Data;
-import org.dromara.common.excel.annotation.ExcelDictFormat;
-import org.dromara.common.excel.convert.ExcelDictConvert;
+import org.dromara.common.translation.annotation.Translation;
+import org.dromara.workflow.common.constant.FlowConstant;
 import org.dromara.workflow.domain.FlowCategory;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
-
 
 /**
  * 流程分类视图对象 wf_category
@@ -34,13 +33,14 @@ public class FlowCategoryVo implements Serializable {
     private Long categoryId;
 
     /**
-     * 父级id
+     * 父级分类id
      */
     private Long parentId;
 
     /**
-     * 父类别名称
+     * 父级分类名称
      */
+    @Translation(type = FlowConstant.CATEGORY_ID_TO_NAME, mapper = "parentId")
     private String parentName;
 
     /**

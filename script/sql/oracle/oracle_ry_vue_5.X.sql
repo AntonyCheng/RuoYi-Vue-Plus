@@ -13,9 +13,9 @@ create table sys_social
     nick_name          varchar2(30)      default '',
     email              varchar2(255)     default '',
     avatar             varchar2(500)     default '',
-    access_token       varchar2(255)     not null,
+    access_token       varchar2(2000)    not null,
     expire_in          number(20)        default null,
-    refresh_token      varchar2(255)     default null,
+    refresh_token      varchar2(2000)    default null,
     access_code        varchar2(255)     default null,
     union_id           varchar2(255)     default null,
     scope              varchar2(255)     default null,
@@ -75,7 +75,7 @@ create table sys_tenant (
     tenant_id         varchar2(20)  not null,
     contact_user_name varchar2(20)  default '',
     contact_phone     varchar2(20)  default '',
-    company_name      varchar2(50)  default '',
+    company_name      varchar2(30)  default '',
     license_number    varchar2(30)  default '',
     address           varchar2(200) default '',
     intro             varchar2(200) default '',
@@ -352,7 +352,7 @@ comment on column sys_role.tenant_id             is '租户编号';
 comment on column sys_role.role_name             is '角色名称';
 comment on column sys_role.role_key              is '角色权限字符串';
 comment on column sys_role.role_sort             is '显示顺序';
-comment on column sys_role.data_scope            is '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）';
+comment on column sys_role.data_scope            is '数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限 5：仅本人数据权限 6：部门及以下或本人数据权限）';
 comment on column sys_role.menu_check_strictly   is '菜单树选择项是否关联显示';
 comment on column sys_role.dept_check_strictly   is '部门树选择项是否关联显示';
 comment on column sys_role.status                is '角色状态（0正常 1停用）';
@@ -447,6 +447,12 @@ insert into sys_menu values('115',  '代码生成',     '3',   '2', 'gen',      
 insert into sys_menu values('121',  '租户管理',     '6',   '1', 'tenant',           'system/tenant/index',          '', 1, 0, 'C', '0', '0', 'system:tenant:list',          'list',          103, 1, sysdate, null, null, '租户管理菜单');
 insert into sys_menu values('122',  '租户套餐管理', '6',   '2', 'tenantPackage',    'system/tenantPackage/index',   '', 1, 0, 'C', '0', '0', 'system:tenantPackage:list',   'form',          103, 1, sysdate, null, null, '租户套餐管理菜单');
 insert into sys_menu values('123',  '客户端管理',   '1',   '11', 'client',           'system/client/index',          '', 1, 0, 'C', '0', '0', 'system:client:list',          'international', 103, 1, sysdate, null, null, '客户端管理菜单');
+insert into sys_menu values('116', '修改生成配置',  '3',   '2', 'gen-edit/index/:tableId', 'tool/gen/editTable', '', 1, 1, 'C', '1', '0', 'tool:gen:edit',           '#',               103, 1, sysdate, null, null, '');
+insert into sys_menu values('130', '分配用户',     '1',   '2', 'role-auth/user/:roleId', 'system/role/authUser', '', 1, 1, 'C', '1', '0', 'system:role:edit',      '#',               103, 1, sysdate, null, null, '');
+insert into sys_menu values('131', '分配角色',     '1',   '1', 'user-auth/role/:userId', 'system/user/authRole', '', 1, 1, 'C', '1', '0', 'system:user:edit',      '#',               103, 1, sysdate, null, null, '');
+insert into sys_menu values('132', '字典数据',     '1',   '6', 'dict-data/index/:dictId', 'system/dict/data', '', 1, 1, 'C', '1', '0', 'system:dict:list',         '#',               103, 1, sysdate, null, null, '');
+insert into sys_menu values('133', '文件配置管理',  '1',   '10', 'oss-config/index',              'system/oss/config', '', 1, 1, 'C', '1', '0', 'system:ossConfig:list',  '#',                103, 1, sysdate, null, null, '');
+
 -- springboot-admin监控
 insert into sys_menu values('117',  'Admin监控',   '2',    '5', 'Admin',            'monitor/admin/index',         '', 1, 0, 'C', '0', '0', 'monitor:admin:list',          'dashboard',     103, 1, sysdate, null, null, 'Admin监控菜单');
 -- oss菜单
@@ -615,6 +621,12 @@ insert into sys_role_menu values ('3', '105');
 insert into sys_role_menu values ('3', '106');
 insert into sys_role_menu values ('3', '107');
 insert into sys_role_menu values ('3', '108');
+insert into sys_role_menu values ('3', '118');
+insert into sys_role_menu values ('3', '123');
+insert into sys_role_menu values ('3', '130');
+insert into sys_role_menu values ('3', '131');
+insert into sys_role_menu values ('3', '132');
+insert into sys_role_menu values ('3', '133');
 insert into sys_role_menu values ('3', '500');
 insert into sys_role_menu values ('3', '501');
 insert into sys_role_menu values ('3', '1001');
@@ -662,6 +674,12 @@ insert into sys_role_menu values ('3', '1042');
 insert into sys_role_menu values ('3', '1043');
 insert into sys_role_menu values ('3', '1044');
 insert into sys_role_menu values ('3', '1045');
+insert into sys_role_menu values ('3', '1050');
+insert into sys_role_menu values ('3', '1061');
+insert into sys_role_menu values ('3', '1062');
+insert into sys_role_menu values ('3', '1063');
+insert into sys_role_menu values ('3', '1064');
+insert into sys_role_menu values ('3', '1065');
 insert into sys_role_menu values ('3', '1500');
 insert into sys_role_menu values ('3', '1501');
 insert into sys_role_menu values ('3', '1502');
@@ -674,6 +692,29 @@ insert into sys_role_menu values ('3', '1508');
 insert into sys_role_menu values ('3', '1509');
 insert into sys_role_menu values ('3', '1510');
 insert into sys_role_menu values ('3', '1511');
+insert into sys_role_menu values ('3', '1600');
+insert into sys_role_menu values ('3', '1601');
+insert into sys_role_menu values ('3', '1602');
+insert into sys_role_menu values ('3', '1603');
+insert into sys_role_menu values ('3', '1620');
+insert into sys_role_menu values ('3', '1621');
+insert into sys_role_menu values ('3', '1622');
+insert into sys_role_menu values ('3', '1623');
+insert into sys_role_menu values ('3', '11616');
+insert into sys_role_menu values ('3', '11618');
+insert into sys_role_menu values ('3', '11619');
+insert into sys_role_menu values ('3', '11622');
+insert into sys_role_menu values ('3', '11623');
+insert into sys_role_menu values ('3', '11629');
+insert into sys_role_menu values ('3', '11632');
+insert into sys_role_menu values ('3', '11633');
+insert into sys_role_menu values ('3', '11638');
+insert into sys_role_menu values ('3', '11639');
+insert into sys_role_menu values ('3', '11640');
+insert into sys_role_menu values ('3', '11641');
+insert into sys_role_menu values ('3', '11642');
+insert into sys_role_menu values ('3', '11643');
+insert into sys_role_menu values ('3', '11701');
 insert into sys_role_menu values ('4', '5');
 insert into sys_role_menu values ('4', '1500');
 insert into sys_role_menu values ('4', '1501');
@@ -1132,6 +1173,7 @@ create table sys_oss (
   file_suffix     varchar2(10)   not null,
   url             varchar2(500)  not null,
   service         varchar2(20)   default 'minio' not null,
+  ext1            varchar2(500)  default '',
   create_dept     number(20)     default null,
   create_by       number(20)     default null,
   create_time     date,
@@ -1149,6 +1191,7 @@ comment on column sys_oss.original_name     is '原名';
 comment on column sys_oss.file_suffix       is '文件后缀名';
 comment on column sys_oss.url               is 'URL地址';
 comment on column sys_oss.service           is '服务商';
+comment on column sys_oss.ext1              is '扩展字段';
 comment on column sys_oss.create_dept       is '创建部门';
 comment on column sys_oss.create_time       is '创建时间';
 comment on column sys_oss.create_by         is '上传者';

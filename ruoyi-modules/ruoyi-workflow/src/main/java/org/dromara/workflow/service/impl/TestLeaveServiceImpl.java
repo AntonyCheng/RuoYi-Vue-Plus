@@ -1,15 +1,17 @@
 package org.dromara.workflow.service.impl;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.dromara.common.core.domain.event.ProcessTaskEvent;
 import org.dromara.common.core.domain.event.ProcessDeleteEvent;
 import org.dromara.common.core.domain.event.ProcessEvent;
-import org.dromara.common.core.domain.event.ProcessTaskEvent;
 import org.dromara.common.core.enums.BusinessStatusEnum;
 import org.dromara.common.core.service.WorkflowService;
 import org.dromara.common.core.utils.MapstructUtils;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 请假Service业务层处理
@@ -43,6 +46,19 @@ public class TestLeaveServiceImpl implements ITestLeaveService {
 
     private final TestLeaveMapper baseMapper;
     private final WorkflowService workflowService;
+
+    /**
+     * spel条件表达：判断小于2
+     *
+     * @param leaveDays 待判断的变量（可不传自行返回true或false）
+     * @return boolean
+     */
+    public boolean eval(Integer leaveDays) {
+        if (leaveDays <= 2) {
+            return true;
+        }
+        return false;
+    }
 
     /**
      * 查询请假
@@ -120,7 +136,7 @@ public class TestLeaveServiceImpl implements ITestLeaveService {
     }
 
     /**
-     * 总体流程监听(例如: 草稿，撤销，退回，作废，终止，已完成等)
+     * 总体流程监听(例如: 草稿，撤销，退回，作废，终止，已完成，单任务完成等)
      * 正常使用只需#processEvent.flowCode=='leave1'
      * 示例为了方便则使用startsWith匹配了全部示例key
      *
@@ -129,16 +145,26 @@ public class TestLeaveServiceImpl implements ITestLeaveService {
     @EventListener(condition = "#processEvent.flowCode.startsWith('leave')")
     public void processHandler(ProcessEvent processEvent) {
         log.info("当前任务执行了{}", processEvent.toString());
-        TestLeave testLeave = baseMapper.selectById(Long.valueOf(processEvent.getBusinessId()));
+        TestLeave testLeave = baseMapper.selectById(Convert.toLong(processEvent.getBusinessId()));
         testLeave.setStatus(processEvent.getStatus());
-        if (processEvent.isSubmit()) {
+        // 用于例如审批附件 审批意见等 存储到业务表内 自行根据业务实现存储流程
+        Map<String, Object> params = processEvent.getParams();
+        if (MapUtil.isNotEmpty(params)) {
+            // 历史任务扩展(通常为附件)
+            String hisTaskExt = Convert.toStr(params.get("hisTaskExt"));
+            // 办理人
+            String handler = Convert.toStr(params.get("handler"));
+            // 办理意见
+            String message = Convert.toStr(params.get("message"));
+        }
+        if (processEvent.getSubmit()) {
             testLeave.setStatus(BusinessStatusEnum.WAITING.getStatus());
         }
         baseMapper.updateById(testLeave);
     }
 
     /**
-     * 执行办理任务监听
+     * 执行任务创建监听
      * 示例：也可通过  @EventListener(condition = "#processTaskEvent.flowCode=='leave1'")进行判断
      * 在方法中判断流程节点key
      * if ("xxx".equals(processTaskEvent.getNodeCode())) {
@@ -149,10 +175,7 @@ public class TestLeaveServiceImpl implements ITestLeaveService {
      */
     @EventListener(condition = "#processTaskEvent.flowCode.startsWith('leave')")
     public void processTaskHandler(ProcessTaskEvent processTaskEvent) {
-        log.info("当前任务执行了{}", processTaskEvent.toString());
-        TestLeave testLeave = baseMapper.selectById(Long.valueOf(processTaskEvent.getBusinessId()));
-        testLeave.setStatus(BusinessStatusEnum.WAITING.getStatus());
-        baseMapper.updateById(testLeave);
+        log.info("当前任务创建了{}", processTaskEvent.toString());
     }
 
     /**
@@ -165,7 +188,7 @@ public class TestLeaveServiceImpl implements ITestLeaveService {
     @EventListener(condition = "#processDeleteEvent.flowCode.startsWith('leave')")
     public void processDeleteHandler(ProcessDeleteEvent processDeleteEvent) {
         log.info("监听删除流程事件，当前任务执行了{}", processDeleteEvent.toString());
-        TestLeave testLeave = baseMapper.selectById(Long.valueOf(processDeleteEvent.getBusinessId()));
+        TestLeave testLeave = baseMapper.selectById(Convert.toLong(processDeleteEvent.getBusinessId()));
         if (ObjectUtil.isNull(testLeave)) {
             return;
         }

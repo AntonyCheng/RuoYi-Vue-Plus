@@ -2,6 +2,7 @@ package org.dromara.workflow.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
+import org.dromara.common.core.domain.dto.StartProcessReturnDTO;
 import org.dromara.common.core.domain.dto.UserDTO;
 import org.dromara.common.core.validate.AddGroup;
 import org.dromara.common.idempotent.annotation.RepeatSubmit;
@@ -11,6 +12,7 @@ import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.web.core.BaseController;
 import org.dromara.warm.flow.core.entity.Node;
+import org.dromara.warm.flow.orm.entity.FlowNode;
 import org.dromara.workflow.common.ConditionalOnEnable;
 import org.dromara.workflow.domain.bo.*;
 import org.dromara.workflow.domain.vo.FlowHisTaskVo;
@@ -20,7 +22,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 任务管理 控制层
@@ -44,9 +45,9 @@ public class FlwTaskController extends BaseController {
     @Log(title = "任务管理", businessType = BusinessType.INSERT)
     @RepeatSubmit()
     @PostMapping("/startWorkFlow")
-    public R<Map<String, Object>> startWorkFlow(@Validated(AddGroup.class) @RequestBody StartProcessBo startProcessBo) {
-        Map<String, Object> map = flwTaskService.startWorkFlow(startProcessBo);
-        return R.ok("提交成功", map);
+    public R<StartProcessReturnDTO> startWorkFlow(@Validated(AddGroup.class) @RequestBody StartProcessBo startProcessBo) {
+        StartProcessReturnDTO startProcessReturn = flwTaskService.startWorkFlow(startProcessBo);
+        return R.ok("提交成功", startProcessReturn);
     }
 
     /**
@@ -125,6 +126,16 @@ public class FlwTaskController extends BaseController {
     @GetMapping("/getTask/{taskId}")
     public R<FlowTaskVo> getTask(@PathVariable Long taskId) {
         return R.ok(flwTaskService.selectById(taskId));
+    }
+
+    /**
+     * 获取下一节点信息
+     *
+     * @param bo 参数
+     */
+    @PostMapping("/getNextNodeList")
+    public R<List<FlowNode>> getNextNodeList(@RequestBody FlowNextNodeBo bo) {
+        return R.ok(flwTaskService.getNextNodeList(bo));
     }
 
     /**

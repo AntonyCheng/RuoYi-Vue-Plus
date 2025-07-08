@@ -11,7 +11,6 @@ import java.io.Serializable;
  *
  * @author AprilWind
  */
-
 @Data
 @NoArgsConstructor
 public class DeptDTO implements Serializable {

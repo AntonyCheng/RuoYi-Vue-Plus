@@ -8,6 +8,7 @@ import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.constant.CacheNames;
 import org.dromara.common.core.constant.SystemConstants;
@@ -15,6 +16,8 @@ import org.dromara.common.core.domain.dto.DeptDTO;
 import org.dromara.common.core.exception.ServiceException;
 import org.dromara.common.core.service.DeptService;
 import org.dromara.common.core.utils.*;
+import org.dromara.common.mybatis.core.page.PageQuery;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.mybatis.helper.DataBaseHelper;
 import org.dromara.common.redis.utils.CacheUtils;
 import org.dromara.common.satoken.utils.LoginHelper;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 部门管理 服务实现
@@ -49,6 +53,19 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
     private final SysDeptMapper baseMapper;
     private final SysRoleMapper roleMapper;
     private final SysUserMapper userMapper;
+
+    /**
+     * 分页查询部门管理数据
+     *
+     * @param dept      部门信息
+     * @param pageQuery 分页对象
+     * @return 部门信息集合
+     */
+    @Override
+    public TableDataInfo<SysDeptVo> selectPageDeptList(SysDeptBo dept, PageQuery pageQuery) {
+        Page<SysDeptVo> page = baseMapper.selectPageDeptList(pageQuery.build(), buildQueryWrapper(dept));
+        return TableDataInfo.build(page);
+    }
 
     /**
      * 查询部门管理数据
@@ -76,6 +93,7 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
     }
 
     private LambdaQueryWrapper<SysDept> buildQueryWrapper(SysDeptBo bo) {
+        Map<String, Object> params = bo.getParams();
         LambdaQueryWrapper<SysDept> lqw = Wrappers.lambdaQuery();
         lqw.eq(SysDept::getDelFlag, SystemConstants.NORMAL);
         lqw.eq(ObjectUtil.isNotNull(bo.getDeptId()), SysDept::getDeptId, bo.getDeptId());
@@ -83,10 +101,22 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         lqw.like(StringUtils.isNotBlank(bo.getDeptName()), SysDept::getDeptName, bo.getDeptName());
         lqw.like(StringUtils.isNotBlank(bo.getDeptCategory()), SysDept::getDeptCategory, bo.getDeptCategory());
         lqw.eq(StringUtils.isNotBlank(bo.getStatus()), SysDept::getStatus, bo.getStatus());
+        lqw.between(params.get("beginTime") != null && params.get("endTime") != null,
+            SysDept::getCreateTime, params.get("beginTime"), params.get("endTime"));
         lqw.orderByAsc(SysDept::getAncestors);
         lqw.orderByAsc(SysDept::getParentId);
         lqw.orderByAsc(SysDept::getOrderNum);
         lqw.orderByAsc(SysDept::getDeptId);
+        if (ObjectUtil.isNotNull(bo.getBelongDeptId())) {
+            //部门树搜索
+            lqw.and(x -> {
+                Long parentId = bo.getBelongDeptId();
+                List<SysDept> deptList = baseMapper.selectListByParentId(parentId);
+                List<Long> deptIds = StreamUtils.toList(deptList, SysDept::getDeptId);
+                deptIds.add(parentId);
+                x.in(SysDept::getDeptId, deptIds);
+            });
+        }
         return lqw;
     }
 
@@ -101,23 +131,17 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         if (CollUtil.isEmpty(depts)) {
             return CollUtil.newArrayList();
         }
-        // 获取当前列表中每一个节点的parentId，然后在列表中查找是否有id与其parentId对应，若无对应，则表明此时节点列表中，该节点在当前列表中属于顶级节点
-        List<Tree<Long>> treeList = CollUtil.newArrayList();
-        for (SysDeptVo d : depts) {
-            Long parentId = d.getParentId();
-            SysDeptVo sysDeptVo = StreamUtils.findFirst(depts, it -> it.getDeptId().longValue() == parentId);
-            if (ObjectUtil.isNull(sysDeptVo)) {
-                List<Tree<Long>> trees = TreeBuildUtils.build(depts, parentId, (dept, tree) ->
-                    tree.setId(dept.getDeptId())
-                        .setParentId(dept.getParentId())
-                        .setName(dept.getDeptName())
-                        .setWeight(dept.getOrderNum())
-                        .putExtra("disabled", SystemConstants.DISABLE.equals(dept.getStatus())));
-                Tree<Long> tree = StreamUtils.findFirst(trees, it -> it.getId().longValue() == d.getDeptId());
-                treeList.add(tree);
-            }
-        }
-        return treeList;
+        return TreeBuildUtils.buildMultiRoot(
+            depts,
+            SysDeptVo::getDeptId,
+            SysDeptVo::getParentId,
+            (node, treeNode) -> treeNode
+                .setId(node.getDeptId())
+                .setParentId(node.getParentId())
+                .setName(node.getDeptName())
+                .setWeight(node.getOrderNum())
+                .putExtra("disabled", SystemConstants.DISABLE.equals(node.getStatus()))
+        );
     }
 
     /**
@@ -323,8 +347,10 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
             dept.setAncestors(oldDept.getAncestors());
         }
         int result = baseMapper.updateById(dept);
-        if (SystemConstants.NORMAL.equals(dept.getStatus()) && StringUtils.isNotEmpty(dept.getAncestors())
-            && !StringUtils.equals(SystemConstants.NORMAL, dept.getAncestors())) {
+        // 如果部门状态为启用，且部门祖级列表不为空，且部门祖级列表不等于根部门祖级列表（如果部门祖级列表不等于根部门祖级列表，则说明存在上级部门）
+        if (SystemConstants.NORMAL.equals(dept.getStatus())
+            && StringUtils.isNotEmpty(dept.getAncestors())
+            && !StringUtils.equals(SystemConstants.ROOT_DEPT_ANCESTORS, dept.getAncestors())) {
             // 如果该部门是启用状态，则启用该部门的所有上级部门
             updateParentDeptStatusNormal(dept);
         }

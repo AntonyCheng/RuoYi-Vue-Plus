@@ -59,14 +59,19 @@ public class CompleteTaskBo implements Serializable {
     private Map<String, Object> variables;
 
     /**
+     * 弹窗选择的办理人
+     */
+    private Map<String, Object> assigneeMap;
+
+    /**
      * 扩展变量(此处为逗号分隔的ossId)
-     * @return
      */
     private String ext;
 
     public Map<String, Object> getVariables() {
         if (variables == null) {
-            return new HashMap<>(16);
+            variables = new HashMap<>(16);
+            return variables;
         }
         variables.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
         return variables;

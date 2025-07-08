@@ -5,7 +5,7 @@ spring.servlet.multipart.location: /ruoyi/server/temp
 spring.boot.admin.client:
   # 增加客户端开关
   enabled: true
-  url: http://localhost:9090
+  url: http://localhost:9090/admin
   instance:
     service-host-type: IP
     metadata:
@@ -123,8 +123,8 @@ redisson:
   nettyThreads: 32
   # 单节点配置
   singleServerConfig:
-    # 客户端名称
-    clientName: ${ruoyi.name}
+    # 客户端名称 不能用中文
+    clientName: RuoYi-Vue-Plus
     # 最小空闲连接数
     connectionMinimumIdleSize: 32
     # 连接池大小
@@ -265,3 +265,10 @@ justauth:
       client-id: 10**********6
       client-secret: 1f7d08**********5b7**********29e
       redirect-uri: ${justauth.address}/social-callback?source=gitlab
+    gitea:
+      # 前端改动 https://gitee.com/JavaLionLi/plus-ui/pulls/204
+      # gitea 服务器地址
+      server-url: https://demo.gitea.com
+      client-id: 10**********6
+      client-secret: 1f7d08**********5b7**********29e
+      redirect-uri: ${justauth.address}/social-callback?source=gitea

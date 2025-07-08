@@ -107,7 +107,7 @@ public interface IFlwInstanceService {
      * @param businessId 业务id
      * @return 结果
      */
-    Map<String, Object> flowImage(String businessId);
+    Map<String, Object> flowHisTaskList(String businessId);
 
     /**
      * 按照实例id更新状态
@@ -123,7 +123,7 @@ public interface IFlwInstanceService {
      * @param instanceId 实例id
      * @return 结果
      */
-    Map<String, Object> instanceVariable(String instanceId);
+    Map<String, Object> instanceVariable(Long instanceId);
 
     /**
      * 设置流程变量

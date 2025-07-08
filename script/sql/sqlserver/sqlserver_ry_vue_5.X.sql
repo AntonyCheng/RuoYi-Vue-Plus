@@ -10,9 +10,9 @@ create table sys_social
     nick_name          nvarchar(30)      DEFAULT ('')   NULL,
     email              nvarchar(255)     DEFAULT ('')   NULL,
     avatar             nvarchar(500)     DEFAULT ('')   NULL,
-    access_token       nvarchar(255)     NOT NULL,
+    access_token       nvarchar(2000)    NOT NULL,
     expire_in          bigint            NULL,
-    refresh_token      nvarchar(255)     NULL,
+    refresh_token      nvarchar(2000)    NULL,
     access_code        nvarchar(255)     NULL,
     union_id           nvarchar(255)     NULL,
     scope              nvarchar(255)     NULL,
@@ -222,7 +222,7 @@ CREATE TABLE sys_tenant
     tenant_id             nvarchar(20)                    NOT NULL,
     contact_user_name     nvarchar(20)                    NULL,
     contact_phone         nvarchar(20)                    NULL,
-    company_name          nvarchar(50)                    NULL,
+    company_name          nvarchar(30)                    NULL,
     license_number        nvarchar(30)                    NULL,
     address               nvarchar(200)                   NULL,
     intro                 nvarchar(200)                   NULL,
@@ -379,7 +379,7 @@ CREATE TABLE sys_tenant_package
 (
     package_id            bigint                          NOT NULL,
     package_name          nvarchar(20)                    NOT NULL,
-    menu_ids              nvarchar(20)                    NULL,
+    menu_ids              nvarchar(3000)                  NULL,
     remark                nvarchar(200)                   NULL,
     menu_check_strictly   tinyint         DEFAULT ((1))   NULL,
     status                nchar(1)        DEFAULT ('0')   NULL,
@@ -1265,15 +1265,15 @@ INSERT sys_dict_data VALUES (32, N'000000', 0, N'邮件认证', N'email', N'sys_
 GO
 INSERT sys_dict_data VALUES (33, N'000000', 0, N'小程序认证', N'xcx', N'sys_grant_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'小程序认证')
 GO
-INSERT sys_dict_data VALUES (34, N'000000', 0, N'三方登录认证', N'`social`', N'sys_grant_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'三方登录认证')
+INSERT sys_dict_data VALUES (34, N'000000', 0, N'三方登录认证', N'social', N'sys_grant_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'三方登录认证')
 GO
-INSERT sys_dict_data VALUES (35, N'000000', 0, N'PC', N'`pc`', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'PC')
+INSERT sys_dict_data VALUES (35, N'000000', 0, N'PC', N'pc', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'PC')
 GO
-INSERT sys_dict_data VALUES (36, N'000000', 0, N'安卓', N'`android`', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'安卓')
+INSERT sys_dict_data VALUES (36, N'000000', 0, N'安卓', N'android', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'安卓')
 GO
-INSERT sys_dict_data VALUES (37, N'000000', 0, N'iOS', N'`ios`', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'iOS')
+INSERT sys_dict_data VALUES (37, N'000000', 0, N'iOS', N'ios', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'iOS')
 GO
-INSERT sys_dict_data VALUES (38, N'000000', 0, N'小程序', N'`xcx`', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'小程序')
+INSERT sys_dict_data VALUES (38, N'000000', 0, N'小程序', N'xcx', N'sys_device_type', N'', N'default', N'N', 103, 1, getdate(), NULL, NULL, N'小程序')
 GO
 
 CREATE TABLE sys_dict_type
@@ -1690,6 +1690,17 @@ INSERT sys_menu VALUES (122, N'租户套餐管理', 6, 2, N'tenantPackage', N'sy
 GO
 INSERT sys_menu VALUES (123, N'客户端管理', 1, 11, N'client', N'system/client/index', N'', 1, 0, N'C', N'0', N'0', N'system:client:list', N'international', 103, 1, getdate(), NULL, NULL, N'客户端管理菜单')
 GO
+INSERT sys_menu VALUES (116, N'修改生成配置',  3,   2, N'gen-edit/index/:tableId', N'tool/gen/editTable', N'', 1, 1, N'C', N'1', N'0', N'tool:gen:edit',           N'#',               103, 1, getdate(), null, null, N'');
+GO
+INSERT sys_menu VALUES (130, N'分配用户',     1,   2, N'role-auth/user/:roleId', N'system/role/authUser', N'', 1, 1, N'C', N'1', N'0', N'system:role:edit',      N'#',               103, 1, getdate(), null, null, N'');
+GO
+INSERT sys_menu VALUES (131, N'分配角色',     1,   1, N'user-auth/role/:userId', N'system/user/authRole', N'', 1, 1, N'C', N'1', N'0', N'system:user:edit',      N'#',               103, 1, getdate(), null, null, N'');
+GO
+INSERT sys_menu VALUES (132, N'字典数据',     1,   6, N'dict-data/index/:dictId', N'system/dict/data', N'', 1, 1, N'C', N'1', N'0', N'system:dict:list',         N'#',               103, 1, getdate(), null, null, N'');
+GO
+INSERT sys_menu VALUES (133, N'文件配置管理',  1,   10, N'oss-config/index',              N'system/oss/config', N'', 1, 1, N'C', N'1', N'0', N'system:ossConfig:list',  N'#',                103, 1, getdate(), null, null, N'');
+GO
+
 INSERT sys_menu VALUES (117, N'Admin监控', 2, 5, N'Admin', N'monitor/admin/index', N'', 1, 0, N'C', N'0', N'0', N'monitor:admin:list', N'dashboard', 103, 1, getdate(), NULL, NULL, N'Admin监控菜单');
 GO
 INSERT sys_menu VALUES (118, N'文件管理', 1, 10, N'oss', N'system/oss/index', N'', 1, 0, N'C', '0', N'0', N'system:oss:list', N'upload', 103, 1, getdate(), NULL, NULL, N'文件管理菜单');
@@ -2318,7 +2329,7 @@ EXEC sys.sp_addextendedproperty
     'COLUMN', N'role_sort'
 GO
 EXEC sys.sp_addextendedproperty
-    'MS_Description', N'数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）' ,
+    'MS_Description', N'数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限 5：仅本人数据权限 6：部门及以下或本人数据权限）' ,
     'SCHEMA', N'dbo',
     'TABLE', N'sys_role',
     'COLUMN', N'data_scope'
@@ -2479,6 +2490,18 @@ INSERT sys_role_menu VALUES (3, 107);
 GO
 INSERT sys_role_menu VALUES (3, 108);
 GO
+INSERT sys_role_menu VALUES (3, 118);
+GO
+INSERT sys_role_menu VALUES (3, 123);
+GO
+INSERT sys_role_menu VALUES (3, 130);
+GO
+INSERT sys_role_menu VALUES (3, 131);
+GO
+INSERT sys_role_menu VALUES (3, 132);
+GO
+INSERT sys_role_menu VALUES (3, 133);
+GO
 INSERT sys_role_menu VALUES (3, 500);
 GO
 INSERT sys_role_menu VALUES (3, 501);
@@ -2573,6 +2596,18 @@ INSERT sys_role_menu VALUES (3, 1044);
 GO
 INSERT sys_role_menu VALUES (3, 1045);
 GO
+INSERT sys_role_menu VALUES (3, 1050);
+GO
+INSERT sys_role_menu VALUES (3, 1061);
+GO
+INSERT sys_role_menu VALUES (3, 1062);
+GO
+INSERT sys_role_menu VALUES (3, 1063);
+GO
+INSERT sys_role_menu VALUES (3, 1064);
+GO
+INSERT sys_role_menu VALUES (3, 1065);
+GO
 INSERT sys_role_menu VALUES (3, 1500);
 GO
 INSERT sys_role_menu VALUES (3, 1501);
@@ -2596,6 +2631,52 @@ GO
 INSERT sys_role_menu VALUES (3, 1510);
 GO
 INSERT sys_role_menu VALUES (3, 1511);
+GO
+INSERT sys_role_menu VALUES (3, 1600);
+GO
+INSERT sys_role_menu VALUES (3, 1601);
+GO
+INSERT sys_role_menu VALUES (3, 1602);
+GO
+INSERT sys_role_menu VALUES (3, 1603);
+GO
+INSERT sys_role_menu VALUES (3, 1620);
+GO
+INSERT sys_role_menu VALUES (3, 1621);
+GO
+INSERT sys_role_menu VALUES (3, 1622);
+GO
+INSERT sys_role_menu VALUES (3, 1623);
+GO
+INSERT sys_role_menu VALUES (3, 11616);
+GO
+INSERT sys_role_menu VALUES (3, 11618);
+GO
+INSERT sys_role_menu VALUES (3, 11619);
+GO
+INSERT sys_role_menu VALUES (3, 11622);
+GO
+INSERT sys_role_menu VALUES (3, 11623);
+GO
+INSERT sys_role_menu VALUES (3, 11629);
+GO
+INSERT sys_role_menu VALUES (3, 11632);
+GO
+INSERT sys_role_menu VALUES (3, 11633);
+GO
+INSERT sys_role_menu VALUES (3, 11638);
+GO
+INSERT sys_role_menu VALUES (3, 11639);
+GO
+INSERT sys_role_menu VALUES (3, 11640);
+GO
+INSERT sys_role_menu VALUES (3, 11641);
+GO
+INSERT sys_role_menu VALUES (3, 11642);
+GO
+INSERT sys_role_menu VALUES (3, 11643);
+GO
+INSERT sys_role_menu VALUES (3, 11701);
 GO
 INSERT sys_role_menu VALUES (4, 5);
 GO
@@ -2869,6 +2950,7 @@ CREATE TABLE sys_oss
     original_name nvarchar(255) DEFAULT ''        NOT NULL,
     file_suffix   nvarchar(10)  DEFAULT ''        NOT NULL,
     url           nvarchar(500)                   NOT NULL,
+    ext1          nvarchar(500) DEFAULT ''        NULL,
     create_dept   bigint                          NULL,
     create_time   datetime2(7)                    NULL,
     create_by     bigint                          NULL,
@@ -2917,6 +2999,12 @@ EXEC sp_addextendedproperty
     'SCHEMA', N'dbo',
     'TABLE', N'sys_oss',
     'COLUMN', N'url'
+GO
+EXEC sp_addextendedproperty
+    'MS_Description', N'扩展字段',
+    'SCHEMA', N'dbo',
+    'TABLE', N'sys_oss',
+    'COLUMN', N'ext1'
 GO
 EXEC sys.sp_addextendedproperty
     'MS_Description', N'创建部门' ,

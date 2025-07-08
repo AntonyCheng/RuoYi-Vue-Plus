@@ -47,10 +47,9 @@ CREATE TABLE flow_node
     definition_id   int8          NOT NULL,                             -- 流程定义id
     node_code       varchar(100)  NOT NULL,                             -- 流程节点编码
     node_name       varchar(100)  NULL,                                 -- 流程节点名称
-    permission_flag varchar(200)  NULL,                                 -- 权限标识（权限类型:权限标识，可以多个，用逗号隔开)
+    permission_flag varchar(200)  NULL,                                 -- 权限标识（权限类型:权限标识，可以多个，用@@隔开)
     node_ratio      numeric(6, 3) NULL,                                 -- 流程签署比例值
     coordinate      varchar(100)  NULL,                                 -- 坐标
-    skip_any_node   varchar(100)  NULL DEFAULT 'N':: character varying, -- 是否可以退回任意节点（Y是 N否）即将删除
     any_node_skip   varchar(100)  NULL,                                 -- 任意结点跳转
     listener_type   varchar(100)  NULL,                                 -- 监听器类型
     listener_path   varchar(400)  NULL,                                 -- 监听器路径
@@ -61,6 +60,7 @@ CREATE TABLE flow_node
     "version"       varchar(20)   NOT NULL,                             -- 版本
     create_time     timestamp     NULL,                                 -- 创建时间
     update_time     timestamp     NULL,                                 -- 更新时间
+    ext             text         NULL,                                  -- 扩展属性
     del_flag        bpchar(1)     NULL DEFAULT '0':: character varying, -- 删除标志
     tenant_id       varchar(40)   NULL,                                 -- 租户id
     CONSTRAINT flow_node_pkey PRIMARY KEY (id)
@@ -72,10 +72,9 @@ COMMENT ON COLUMN flow_node.node_type IS '节点类型（0开始节点 1中间�
 COMMENT ON COLUMN flow_node.definition_id IS '流程定义id';
 COMMENT ON COLUMN flow_node.node_code IS '流程节点编码';
 COMMENT ON COLUMN flow_node.node_name IS '流程节点名称';
-COMMENT ON COLUMN flow_node.permission_flag IS '权限标识（权限类型:权限标识，可以多个，用逗号隔开)';
+COMMENT ON COLUMN flow_node.permission_flag IS '权限标识（权限类型:权限标识，可以多个，用@@隔开)';
 COMMENT ON COLUMN flow_node.node_ratio IS '流程签署比例值';
 COMMENT ON COLUMN flow_node.coordinate IS '坐标';
-COMMENT ON COLUMN flow_node.skip_any_node IS '是否可以退回任意节点（Y是 N否）即将删除';
 COMMENT ON COLUMN flow_node.any_node_skip IS '任意结点跳转';
 COMMENT ON COLUMN flow_node.listener_type IS '监听器类型';
 COMMENT ON COLUMN flow_node.listener_path IS '监听器路径';
@@ -86,6 +85,7 @@ COMMENT ON COLUMN flow_node.form_path IS '审批表单路径';
 COMMENT ON COLUMN flow_node."version" IS '版本';
 COMMENT ON COLUMN flow_node.create_time IS '创建时间';
 COMMENT ON COLUMN flow_node.update_time IS '更新时间';
+COMMENT ON COLUMN flow_node.ext IS '节点扩展属性';
 COMMENT ON COLUMN flow_node.del_flag IS '删除标志';
 COMMENT ON COLUMN flow_node.tenant_id IS '租户id';
 
@@ -136,6 +136,7 @@ CREATE TABLE flow_instance
     variable        text         NULL,                                     -- 任务变量
     flow_status     varchar(20)  NOT NULL,                                 -- 流程状态（0待提交 1审批中 2 审批通过 8已完成 9已退回 10失效）
     activity_status int2         NOT NULL DEFAULT 1,                       -- 流程激活状态（0挂起 1激活）
+    def_json        text         NULL,                                     -- 流程定义json
     create_by       varchar(64)  NULL     DEFAULT '':: character varying,  -- 创建者
     create_time     timestamp    NULL,                                     -- 创建时间
     update_time     timestamp    NULL,                                     -- 更新时间
@@ -153,8 +154,9 @@ COMMENT ON COLUMN flow_instance.node_type IS '节点类型（0开始节点 1中�
 COMMENT ON COLUMN flow_instance.node_code IS '流程节点编码';
 COMMENT ON COLUMN flow_instance.node_name IS '流程节点名称';
 COMMENT ON COLUMN flow_instance.variable IS '任务变量';
-COMMENT ON COLUMN flow_instance.flow_status IS '流程状态（0待提交 1审批中 2 审批通过 3自动通过 4终止 5作废 6撤销 7取回  8已完成 9已退回 10失效）';
+COMMENT ON COLUMN flow_instance.flow_status IS '流程状态（0待提交 1审批中 2审批通过 4终止 5作废 6撤销 8已完成 9已退回 10失效 11拿回）';
 COMMENT ON COLUMN flow_instance.activity_status IS '流程激活状态（0挂起 1激活）';
+COMMENT ON COLUMN flow_instance.def_json IS '流程定义json';
 COMMENT ON COLUMN flow_instance.create_by IS '创建者';
 COMMENT ON COLUMN flow_instance.create_time IS '创建时间';
 COMMENT ON COLUMN flow_instance.update_time IS '更新时间';
@@ -170,6 +172,7 @@ CREATE TABLE flow_task
     node_code     varchar(100) NOT NULL,                             -- 节点编码
     node_name     varchar(100) NULL,                                 -- 节点名称
     node_type     int2         NOT NULL,                             -- 节点类型（0开始节点 1中间节点 2结束节点 3互斥网关 4并行网关）
+    flow_status   varchar(20)  NOT NULL,                             -- 流程状态（0待提交 1审批中 2 审批通过 8已完成 9已退回 10失效）
     form_custom   bpchar(1)    NULL DEFAULT 'N':: character varying, -- 审批表单是否自定义（Y是 N否）
     form_path     varchar(100) NULL,                                 -- 审批表单路径
     create_time   timestamp    NULL,                                 -- 创建时间
@@ -186,6 +189,7 @@ COMMENT ON COLUMN flow_task.instance_id IS '对应flow_instance表的id';
 COMMENT ON COLUMN flow_task.node_code IS '节点编码';
 COMMENT ON COLUMN flow_task.node_name IS '节点名称';
 COMMENT ON COLUMN flow_task.node_type IS '节点类型（0开始节点 1中间节点 2结束节点 3互斥网关 4并行网关）';
+COMMENT ON COLUMN flow_task.flow_status IS '流程状态（0待提交 1审批中 2审批通过 4终止 5作废 6撤销 8已完成 9已退回 10失效 11拿回）';
 COMMENT ON COLUMN flow_task.form_custom IS '审批表单是否自定义（Y是 N否）';
 COMMENT ON COLUMN flow_task.form_path IS '审批表单路径';
 COMMENT ON COLUMN flow_task.create_time IS '创建时间';
@@ -211,7 +215,7 @@ CREATE TABLE flow_his_task
     flow_status      varchar(20)  NOT NULL,                                 -- 流程状态（0待提交 1审批中 2 审批通过 8已完成 9已退回 10失效）
     form_custom      bpchar(1)    NULL     DEFAULT 'N':: character varying, -- 审批表单是否自定义（Y是 N否）
     form_path        varchar(100) NULL,                                     -- 审批表单路径
-    ext              varchar(500) NULL,                                     -- 扩展字段，预留给业务系统使用
+    ext              text         NULL,                                     -- 扩展字段，预留给业务系统使用
     message          varchar(500) NULL,                                     -- 审批意见
     variable         text         NULL,                                     -- 任务变量
     create_time      timestamp    NULL,                                     -- 创建时间
@@ -235,7 +239,7 @@ COMMENT ON COLUMN flow_his_task.approver IS '审批者';
 COMMENT ON COLUMN flow_his_task.cooperate_type IS '协作方式(1审批 2转办 3委派 4会签 5票签 6加签 7减签)';
 COMMENT ON COLUMN flow_his_task.collaborator IS '协作人';
 COMMENT ON COLUMN flow_his_task.skip_type IS '流转类型（PASS通过 REJECT退回 NONE无动作）';
-COMMENT ON COLUMN flow_his_task.flow_status IS '流程状态（1审批中 2 审批通过 9已退回 10失效）';
+COMMENT ON COLUMN flow_his_task.flow_status IS '流程状态（0待提交 1审批中 2审批通过 4终止 5作废 6撤销 8已完成 9已退回 10失效 11拿回）';
 COMMENT ON COLUMN flow_his_task.form_custom IS '审批表单是否自定义（Y是 N否）';
 COMMENT ON COLUMN flow_his_task.form_path IS '审批表单路径';
 COMMENT ON COLUMN flow_his_task.message IS '审批意见';
@@ -260,6 +264,7 @@ CREATE TABLE flow_user
     CONSTRAINT flow_user_pk PRIMARY KEY (id)
 );
 CREATE INDEX user_processed_type ON flow_user USING btree (processed_by, type);
+CREATE INDEX user_associated_idx ON FLOW_USER USING btree (associated);
 COMMENT ON TABLE flow_user IS '流程用户表';
 
 COMMENT ON COLUMN flow_user.id IS '主键id';
@@ -364,6 +369,9 @@ INSERT INTO sys_menu VALUES ('11622', '流程分类', '11616', '1', 'category', 
 INSERT INTO sys_menu VALUES ('11629', '我发起的', '11618', '1', 'myDocument', 'workflow/task/myDocument', '', '1', '1', 'C', '0', '0', '', 'guide', 103, 1, now(), NULL, NULL, '');
 INSERT INTO sys_menu VALUES ('11630', '流程监控', '11616', '4', 'monitor', '', '', '1', '0', 'M', '0', '0', '', 'monitor', 103, 1, now(), NULL, NULL, '');
 INSERT INTO sys_menu VALUES ('11631', '待办任务', '11630', '2', 'allTaskWaiting', 'workflow/task/allTaskWaiting', '', '1', '1', 'C', '0', '0', '', 'waiting', 103, 1, now(), NULL, NULL, '');
+INSERT INTO sys_menu VALUES ('11700', '流程设计', '11616', '5', 'design/index',   'workflow/processDefinition/design', '', '1', '1', 'C', '1', '0', 'workflow:leave:edit', '#', 103, 1, now(), NULL, NULL, '');
+INSERT INTO sys_menu VALUES ('11701', '请假申请', '11616', '6', 'leaveEdit/index', 'workflow/leave/leaveEdit', '', '1', '1', 'C', '1', '0', 'workflow:leave:edit', '#', 103, 1, now(), NULL, NULL, '');
+
 INSERT INTO sys_menu VALUES ('11623', '流程分类查询', '11622', '1', '#', '', '', '1', '0', 'F', '0', '0', 'workflow:category:query', '#', 103, 1, now(), NULL, NULL, '');
 INSERT INTO sys_menu VALUES ('11624', '流程分类新增', '11622', '2', '#', '', '', '1', '0', 'F', '0', '0', 'workflow:category:add', '#', 103, 1, now(), NULL, NULL, '');
 INSERT INTO sys_menu VALUES ('11625', '流程分类修改', '11622', '3', '#', '', '', '1', '0', 'F', '0', '0', 'workflow:category:edit', '#', 103, 1, now(), NULL, NULL, '');

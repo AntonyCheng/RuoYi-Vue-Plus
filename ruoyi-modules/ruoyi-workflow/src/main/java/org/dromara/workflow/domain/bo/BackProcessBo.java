@@ -31,6 +31,11 @@ public class BackProcessBo implements Serializable {
     private Long taskId;
 
     /**
+     * 附件id
+     */
+    private String fileId;
+
+    /**
      * 消息类型
      */
     private List<String> messageType;
@@ -38,7 +43,6 @@ public class BackProcessBo implements Serializable {
     /**
      * 驳回的节点id(目前未使用，直接驳回到申请人)
      */
-    @NotBlank(message = "驳回的节点不能为空", groups = AddGroup.class)
     private String nodeCode;
 
     /**

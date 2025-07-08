@@ -38,15 +38,30 @@ public class SseEmitterManager {
         // 每个用户可以有多个 SSE 连接，通过 token 进行区分
         Map<String, SseEmitter> emitters = USER_TOKEN_EMITTERS.computeIfAbsent(userId, k -> new ConcurrentHashMap<>());
 
-        // 创建一个新的 SseEmitter 实例，超时时间设置为 0 表示无限制
-        SseEmitter emitter = new SseEmitter(0L);
+        // 创建一个新的 SseEmitter 实例，超时时间设置为一天 避免连接之后直接关闭浏览器导致连接停滞
+        SseEmitter emitter = new SseEmitter(86400000L);
 
         emitters.put(token, emitter);
 
         // 当 emitter 完成、超时或发生错误时，从映射表中移除对应的 token
-        emitter.onCompletion(() -> emitters.remove(token));
-        emitter.onTimeout(() -> emitters.remove(token));
-        emitter.onError((e) -> emitters.remove(token));
+        emitter.onCompletion(() -> {
+            SseEmitter remove = emitters.remove(token);
+            if (remove != null) {
+                remove.complete();
+            }
+        });
+        emitter.onTimeout(() -> {
+            SseEmitter remove = emitters.remove(token);
+            if (remove != null) {
+                remove.complete();
+            }
+        });
+        emitter.onError((e) -> {
+            SseEmitter remove = emitters.remove(token);
+            if (remove != null) {
+                remove.complete();
+            }
+        });
 
         try {
             // 向客户端发送一条连接成功的事件
@@ -65,6 +80,9 @@ public class SseEmitterManager {
      * @param token  用户的唯一令牌，用于识别具体的连接
      */
     public void disconnect(Long userId, String token) {
+        if (userId == null || token == null) {
+            return;
+        }
         Map<String, SseEmitter> emitters = USER_TOKEN_EMITTERS.get(userId);
         if (MapUtil.isNotEmpty(emitters)) {
             try {
@@ -103,7 +121,10 @@ public class SseEmitterManager {
                         .name("message")
                         .data(message));
                 } catch (Exception e) {
-                    emitters.remove(entry.getKey());
+                    SseEmitter remove = emitters.remove(entry.getKey());
+                    if (remove != null) {
+                        remove.complete();
+                    }
                 }
             }
         } else {

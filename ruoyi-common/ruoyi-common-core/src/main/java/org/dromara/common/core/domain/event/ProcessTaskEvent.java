@@ -6,7 +6,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 /**
- * 流程办理监听
+ * 流程任务监听
  *
  * @author may
  */
@@ -27,9 +27,19 @@ public class ProcessTaskEvent implements Serializable {
     private String flowCode;
 
     /**
-     * 审批节点编码
+     * 节点类型（0开始节点 1中间节点 2结束节点 3互斥网关 4并行网关）
+     */
+    private Integer nodeType;
+
+    /**
+     * 流程节点编码
      */
     private String nodeCode;
+
+    /**
+     * 流程节点名称
+     */
+    private String nodeName;
 
     /**
      * 任务id
@@ -40,5 +50,10 @@ public class ProcessTaskEvent implements Serializable {
      * 业务id
      */
     private String businessId;
+
+    /**
+     * 流程状态
+     */
+    private String status;
 
 }

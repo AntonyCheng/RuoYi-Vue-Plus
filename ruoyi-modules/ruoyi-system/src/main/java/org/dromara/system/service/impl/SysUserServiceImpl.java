@@ -35,10 +35,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 用户 业务层处理
@@ -71,15 +69,11 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
      */
     @Override
     public List<SysUserExportVo> selectUserExportList(SysUserBo user) {
-        return baseMapper.selectUserExportList(this.buildQueryWrapper(user));
-    }
-
-    private Wrapper<SysUser> buildQueryWrapper(SysUserBo user) {
         Map<String, Object> params = user.getParams();
         QueryWrapper<SysUser> wrapper = Wrappers.query();
         wrapper.eq("u.del_flag", SystemConstants.NORMAL)
-            .eq(ObjectUtil.isNotNull(user.getUserId()), "u.user_id", user.getUserId())
             .like(StringUtils.isNotBlank(user.getUserName()), "u.user_name", user.getUserName())
+            .like(StringUtils.isNotBlank(user.getNickName()), "u.nick_name", user.getNickName())
             .eq(StringUtils.isNotBlank(user.getStatus()), "u.status", user.getStatus())
             .like(StringUtils.isNotBlank(user.getPhonenumber()), "u.phonenumber", user.getPhonenumber())
             .between(params.get("beginTime") != null && params.get("endTime") != null,
@@ -90,8 +84,29 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
                 ids.add(user.getDeptId());
                 w.in("u.dept_id", ids);
             }).orderByAsc("u.user_id");
+        return baseMapper.selectUserExportList(wrapper);
+    }
+
+    private Wrapper<SysUser> buildQueryWrapper(SysUserBo user) {
+        Map<String, Object> params = user.getParams();
+        LambdaQueryWrapper<SysUser> wrapper = Wrappers.lambdaQuery();
+        wrapper.eq(SysUser::getDelFlag, SystemConstants.NORMAL)
+            .eq(ObjectUtil.isNotNull(user.getUserId()), SysUser::getUserId, user.getUserId())
+            .in(StringUtils.isNotBlank(user.getUserIds()), SysUser::getUserId, StringUtils.splitTo(user.getUserIds(), Convert::toLong))
+            .like(StringUtils.isNotBlank(user.getUserName()), SysUser::getUserName, user.getUserName())
+            .like(StringUtils.isNotBlank(user.getNickName()), SysUser::getNickName, user.getNickName())
+            .eq(StringUtils.isNotBlank(user.getStatus()), SysUser::getStatus, user.getStatus())
+            .like(StringUtils.isNotBlank(user.getPhonenumber()), SysUser::getPhonenumber, user.getPhonenumber())
+            .between(params.get("beginTime") != null && params.get("endTime") != null,
+                SysUser::getCreateTime, params.get("beginTime"), params.get("endTime"))
+            .and(ObjectUtil.isNotNull(user.getDeptId()), w -> {
+                List<SysDept> deptList = deptMapper.selectListByParentId(user.getDeptId());
+                List<Long> ids = StreamUtils.toList(deptList, SysDept::getDeptId);
+                ids.add(user.getDeptId());
+                w.in(SysUser::getDeptId, ids);
+            }).orderByAsc(SysUser::getUserId);
         if (StringUtils.isNotBlank(user.getExcludeUserIds())) {
-            wrapper.notIn("u.user_id", StringUtils.splitTo(user.getExcludeUserIds(), Convert::toLong));
+            wrapper.notIn(SysUser::getUserId, StringUtils.splitList(user.getExcludeUserIds()));
         }
         return wrapper;
     }
@@ -635,7 +650,10 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
             return List.of();
         }
         List<SysUserVo> list = baseMapper.selectVoList(new LambdaQueryWrapper<SysUser>()
-            .select(SysUser::getUserId, SysUser::getUserName, SysUser::getNickName, SysUser::getEmail, SysUser::getPhonenumber)
+            .select(SysUser::getUserId, SysUser::getDeptId, SysUser::getUserName,
+                SysUser::getNickName, SysUser::getUserType, SysUser::getEmail,
+                SysUser::getPhonenumber, SysUser::getSex, SysUser::getStatus,
+                SysUser::getCreateTime)
             .eq(SysUser::getStatus, SystemConstants.NORMAL)
             .in(SysUser::getUserId, userIds));
         return BeanUtil.copyToList(list, UserDTO.class);
@@ -676,7 +694,7 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
         // 获取用户ID列表
         Set<Long> userIds = StreamUtils.toSet(userRoles, SysUserRole::getUserId);
 
-        return selectListByIds(new ArrayList<>(userIds));
+        return this.selectListByIds(new ArrayList<>(userIds));
     }
 
     /**
@@ -716,7 +734,83 @@ public class SysUserServiceImpl implements ISysUserService, UserService {
         // 获取用户ID列表
         Set<Long> userIds = StreamUtils.toSet(userPosts, SysUserPost::getUserId);
 
-        return selectListByIds(new ArrayList<>(userIds));
+        return this.selectListByIds(new ArrayList<>(userIds));
+    }
+
+    /**
+     * 根据用户 ID 列表查询用户名称映射关系
+     *
+     * @param userIds 用户 ID 列表
+     * @return Map，其中 key 为用户 ID，value 为对应的用户名称
+     */
+    @Override
+    public Map<Long, String> selectUserNamesByIds(List<Long> userIds) {
+        if (CollUtil.isEmpty(userIds)) {
+            return Collections.emptyMap();
+        }
+        return baseMapper.selectList(
+                new LambdaQueryWrapper<SysUser>()
+                    .select(SysUser::getUserId, SysUser::getNickName)
+                    .in(SysUser::getUserId, userIds)
+            ).stream()
+            .collect(Collectors.toMap(SysUser::getUserId, SysUser::getNickName));
+    }
+
+    /**
+     * 根据角色 ID 列表查询角色名称映射关系
+     *
+     * @param roleIds 角色 ID 列表
+     * @return Map，其中 key 为角色 ID，value 为对应的角色名称
+     */
+    @Override
+    public Map<Long, String> selectRoleNamesByIds(List<Long> roleIds) {
+        if (CollUtil.isEmpty(roleIds)) {
+            return Collections.emptyMap();
+        }
+        return roleMapper.selectList(
+                new LambdaQueryWrapper<SysRole>()
+                    .select(SysRole::getRoleId, SysRole::getRoleName)
+                    .in(SysRole::getRoleId, roleIds)
+            ).stream()
+            .collect(Collectors.toMap(SysRole::getRoleId, SysRole::getRoleName));
+    }
+
+    /**
+     * 根据部门 ID 列表查询部门名称映射关系
+     *
+     * @param deptIds 部门 ID 列表
+     * @return Map，其中 key 为部门 ID，value 为对应的部门名称
+     */
+    @Override
+    public Map<Long, String> selectDeptNamesByIds(List<Long> deptIds) {
+        if (CollUtil.isEmpty(deptIds)) {
+            return Collections.emptyMap();
+        }
+        return deptMapper.selectList(
+                new LambdaQueryWrapper<SysDept>()
+                    .select(SysDept::getDeptId, SysDept::getDeptName)
+                    .in(SysDept::getDeptId, deptIds)
+            ).stream()
+            .collect(Collectors.toMap(SysDept::getDeptId, SysDept::getDeptName));
+    }
+
+    /**
+     * 根据岗位 ID 列表查询岗位名称映射关系
+     *
+     * @param postIds 岗位 ID 列表
+     * @return Map，其中 key 为岗位 ID，value 为对应的岗位名称
+     */
+    @Override
+    public Map<Long, String> selectPostNamesByIds(List<Long> postIds) {
+        if (CollUtil.isEmpty(postIds)) {
+            return Collections.emptyMap();
+        }
+        return postMapper.selectList(
+                new LambdaQueryWrapper<SysPost>()
+                    .select(SysPost::getPostId, SysPost::getPostName)
+                    .in(SysPost::getPostId, postIds)
+            ).stream()
+            .collect(Collectors.toMap(SysPost::getPostId, SysPost::getPostName));
     }
 
 }

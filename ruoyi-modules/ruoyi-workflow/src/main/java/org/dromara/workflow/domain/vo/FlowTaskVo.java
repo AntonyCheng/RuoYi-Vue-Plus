@@ -173,4 +173,15 @@ public class FlowTaskVo implements Serializable {
      */
     @Translation(type = TransConstant.USER_ID_TO_NICKNAME, mapper = "createBy")
     private String createByName;
+
+    /**
+     * 是否为申请人节点
+     */
+    private Boolean applyNode;
+
+    /**
+     * 按钮权限
+     */
+    private List<ButtonPermissionVo> buttonList;
+
 }

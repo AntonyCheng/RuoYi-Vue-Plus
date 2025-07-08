@@ -19,6 +19,7 @@ spring:
     admin:
       ui:
         title: RuoYi-Vue-Plus服务监控中心
+      context-path: /admin
 
 --- # Actuator 监控端点的配置项
 management:
@@ -37,7 +38,7 @@ spring.boot.admin.client:
   # 增加客户端开关
   enabled: true
   # 设置 Spring Boot Admin Server 地址
-  url: http://localhost:9090
+  url: http://localhost:9090/admin
   instance:
     service-host-type: IP
     metadata:

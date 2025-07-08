@@ -33,8 +33,8 @@ import org.dromara.workflow.common.constant.FlowConstant;
 import org.dromara.workflow.domain.FlowCategory;
 import org.dromara.workflow.domain.vo.FlowDefinitionVo;
 import org.dromara.workflow.mapper.FlwCategoryMapper;
+import org.dromara.workflow.service.IFlwCommonService;
 import org.dromara.workflow.service.IFlwDefinitionService;
-import org.dromara.workflow.utils.WorkflowUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -64,6 +64,7 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
     private final FlowNodeMapper flowNodeMapper;
     private final FlowSkipMapper flowSkipMapper;
     private final FlwCategoryMapper flwCategoryMapper;
+    private final IFlwCommonService flwCommonService;
 
     /**
      * 查询流程定义列表
@@ -77,10 +78,8 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
         LambdaQueryWrapper<FlowDefinition> wrapper = buildQueryWrapper(flowDefinition);
         wrapper.eq(FlowDefinition::getIsPublish, PublishStatus.PUBLISHED.getKey());
         Page<FlowDefinition> page = flowDefinitionMapper.selectPage(pageQuery.build(), wrapper);
-        TableDataInfo<FlowDefinitionVo> build = TableDataInfo.build();
-        build.setRows(BeanUtil.copyToList(page.getRecords(), FlowDefinitionVo.class));
-        build.setTotal(page.getTotal());
-        return build;
+        List<FlowDefinitionVo> list = BeanUtil.copyToList(page.getRecords(), FlowDefinitionVo.class);
+        return new TableDataInfo<>(list, page.getTotal());
     }
 
     /**
@@ -95,10 +94,8 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
         LambdaQueryWrapper<FlowDefinition> wrapper = buildQueryWrapper(flowDefinition);
         wrapper.in(FlowDefinition::getIsPublish, Arrays.asList(PublishStatus.UNPUBLISHED.getKey(), PublishStatus.EXPIRED.getKey()));
         Page<FlowDefinition> page = flowDefinitionMapper.selectPage(pageQuery.build(), wrapper);
-        TableDataInfo<FlowDefinitionVo> build = TableDataInfo.build();
-        build.setRows(BeanUtil.copyToList(page.getRecords(), FlowDefinitionVo.class));
-        build.setTotal(page.getTotal());
-        return build;
+        List<FlowDefinitionVo> list = BeanUtil.copyToList(page.getRecords(), FlowDefinitionVo.class);
+        return new TableDataInfo<>(list, page.getTotal());
     }
 
     private LambdaQueryWrapper<FlowDefinition> buildQueryWrapper(FlowDefinition flowDefinition) {
@@ -107,7 +104,7 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
         wrapper.like(StringUtils.isNotBlank(flowDefinition.getFlowName()), FlowDefinition::getFlowName, flowDefinition.getFlowName());
         if (StringUtils.isNotBlank(flowDefinition.getCategory())) {
             List<Long> categoryIds = flwCategoryMapper.selectCategoryIdsByParentId(Convert.toLong(flowDefinition.getCategory()));
-            wrapper.in(FlowDefinition::getCategory, categoryIds);
+            wrapper.in(FlowDefinition::getCategory, StreamUtils.toList(categoryIds, Convert::toStr));
         }
         wrapper.orderByDesc(FlowDefinition::getCreateTime);
         return wrapper;
@@ -125,7 +122,7 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
         List<String> errorMsg = new ArrayList<>();
         if (CollUtil.isNotEmpty(flowNodes)) {
             for (FlowNode flowNode : flowNodes) {
-                String applyNodeCode = WorkflowUtils.applyNodeCode(id);
+                String applyNodeCode = flwCommonService.applyNodeCode(id);
                 if (StringUtils.isBlank(flowNode.getPermissionFlag()) && !applyNodeCode.equals(flowNode.getNodeCode()) && NodeType.BETWEEN.getKey().equals(flowNode.getNodeType())) {
                     errorMsg.add(flowNode.getNodeName());
                 }
@@ -190,7 +187,7 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
             List<FlowDefinition> flowDefinitions = flowDefinitionMapper.selectByIds(StreamUtils.toList(flowHisTasks, FlowHisTask::getDefinitionId));
             if (CollUtil.isNotEmpty(flowDefinitions)) {
                 String join = StreamUtils.join(flowDefinitions, FlowDefinition::getFlowCode);
-                log.error("流程定义【{}】已被使用不可被删除！", join);
+                log.info("流程定义【{}】已被使用不可被删除！", join);
                 throw new ServiceException("流程定义【" + join + "】已被使用不可被删除！");
             }
         }
@@ -219,6 +216,11 @@ public class FlwDefinitionServiceImpl implements IFlwDefinitionService {
             .eq(FlowCategory::getTenantId, DEFAULT_TENANT_ID).eq(FlowCategory::getCategoryId, FlowConstant.FLOW_CATEGORY_ID));
         flowCategory.setCategoryId(null);
         flowCategory.setTenantId(tenantId);
+        flowCategory.setCreateDept(null);
+        flowCategory.setCreateBy(null);
+        flowCategory.setCreateTime(null);
+        flowCategory.setUpdateBy(null);
+        flowCategory.setUpdateTime(null);
         flwCategoryMapper.insert(flowCategory);
         List<Long> defIds = StreamUtils.toList(flowDefinitions, FlowDefinition::getId);
         List<FlowNode> flowNodes = flowNodeMapper.selectList(new LambdaQueryWrapper<FlowNode>().in(FlowNode::getDefinitionId, defIds));

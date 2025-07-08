@@ -1,10 +1,13 @@
 package org.dromara.workflow.service;
 
+import org.dromara.common.core.domain.dto.StartProcessReturnDTO;
 import org.dromara.common.core.domain.dto.UserDTO;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.warm.flow.core.entity.Node;
+import org.dromara.warm.flow.core.entity.Task;
 import org.dromara.warm.flow.orm.entity.FlowHisTask;
+import org.dromara.warm.flow.orm.entity.FlowNode;
 import org.dromara.warm.flow.orm.entity.FlowTask;
 import org.dromara.workflow.domain.bo.*;
 import org.dromara.workflow.domain.vo.FlowHisTaskVo;
@@ -26,7 +29,7 @@ public interface IFlwTaskService {
      * @param startProcessBo 启动流程参数
      * @return 结果
      */
-    Map<String, Object> startWorkFlow(StartProcessBo startProcessBo);
+    StartProcessReturnDTO startWorkFlow(StartProcessBo startProcessBo);
 
     /**
      * 办理任务
@@ -35,6 +38,14 @@ public interface IFlwTaskService {
      * @return 结果
      */
     boolean completeTask(CompleteTaskBo completeTaskBo);
+
+    /**
+     * 添加抄送人
+     *
+     * @param task         任务信息
+     * @param flowCopyList 抄送人
+     */
+    void setCopy(Task task, List<FlowCopyBo> flowCopyList);
 
     /**
      * 查询当前用户的待办任务
@@ -132,6 +143,14 @@ public interface IFlwTaskService {
     FlowTaskVo selectById(Long taskId);
 
     /**
+     * 获取下一节点信息
+     *
+     * @param bo 参数
+     * @return 结果
+     */
+    List<FlowNode> getNextNodeList(FlowNextNodeBo bo);
+
+    /**
      * 按照任务id查询任务
      *
      * @param taskIdList 任务id
@@ -187,4 +206,13 @@ public interface IFlwTaskService {
      * @return 结果
      */
     List<UserDTO> currentTaskAllUser(Long taskId);
+
+    /**
+     * 按照节点编码查询节点
+     *
+     * @param nodeCode     节点编码
+     * @param definitionId 流程定义id
+     * @return 节点
+     */
+    FlowNode getByNodeCode(String nodeCode, Long definitionId);
 }
