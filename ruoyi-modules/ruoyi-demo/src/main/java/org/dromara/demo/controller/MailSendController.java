@@ -21,7 +21,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/demo/mail")
-public class MailController {
+public class MailSendController {
 
     /**
      * 发送邮件

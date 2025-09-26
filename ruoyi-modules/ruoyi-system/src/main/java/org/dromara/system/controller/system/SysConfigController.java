@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.excel.utils.ExcelUtil;
+import org.dromara.common.idempotent.annotation.RepeatSubmit;
 import org.dromara.common.log.annotation.Log;
 import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.mybatis.core.page.PageQuery;
@@ -78,6 +79,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:add")
     @Log(title = "参数管理", businessType = BusinessType.INSERT)
+    @RepeatSubmit()
     @PostMapping
     public R<Void> add(@Validated @RequestBody SysConfigBo config) {
         if (!configService.checkConfigKeyUnique(config)) {
@@ -92,6 +94,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping
     public R<Void> edit(@Validated @RequestBody SysConfigBo config) {
         if (!configService.checkConfigKeyUnique(config)) {
@@ -106,6 +109,7 @@ public class SysConfigController extends BaseController {
      */
     @SaCheckPermission("system:config:edit")
     @Log(title = "参数管理", businessType = BusinessType.UPDATE)
+    @RepeatSubmit()
     @PutMapping("/updateByKey")
     public R<Void> updateByKey(@RequestBody SysConfigBo config) {
         configService.updateConfig(config);

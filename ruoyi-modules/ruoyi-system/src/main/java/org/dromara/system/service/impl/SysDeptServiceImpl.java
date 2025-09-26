@@ -36,10 +36,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 部门管理 服务实现
@@ -110,10 +107,7 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
         if (ObjectUtil.isNotNull(bo.getBelongDeptId())) {
             //部门树搜索
             lqw.and(x -> {
-                Long parentId = bo.getBelongDeptId();
-                List<SysDept> deptList = baseMapper.selectListByParentId(parentId);
-                List<Long> deptIds = StreamUtils.toList(deptList, SysDept::getDeptId);
-                deptIds.add(parentId);
+                List<Long> deptIds = baseMapper.selectDeptAndChildById(bo.getBelongDeptId());
                 x.in(SysDept::getDeptId, deptIds);
             });
         }
@@ -198,7 +192,7 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
                 list.add(vo.getDeptName());
             }
         }
-        return String.join(StringUtils.SEPARATOR, list);
+        return StringUtils.joinComma(list);
     }
 
     /**
@@ -407,6 +401,26 @@ public class SysDeptServiceImpl implements ISysDeptService, DeptService {
     @Override
     public int deleteDeptById(Long deptId) {
         return baseMapper.deleteById(deptId);
+    }
+
+
+    /**
+     * 根据部门 ID 列表查询部门名称映射关系
+     *
+     * @param deptIds 部门 ID 列表
+     * @return Map，其中 key 为部门 ID，value 为对应的部门名称
+     */
+    @Override
+    public Map<Long, String> selectDeptNamesByIds(List<Long> deptIds) {
+        if (CollUtil.isEmpty(deptIds)) {
+            return Collections.emptyMap();
+        }
+        List<SysDept> list = baseMapper.selectList(
+            new LambdaQueryWrapper<SysDept>()
+                .select(SysDept::getDeptId, SysDept::getDeptName)
+                .in(SysDept::getDeptId, deptIds)
+        );
+        return StreamUtils.toMap(list, SysDept::getDeptId, SysDept::getDeptName);
     }
 
 }

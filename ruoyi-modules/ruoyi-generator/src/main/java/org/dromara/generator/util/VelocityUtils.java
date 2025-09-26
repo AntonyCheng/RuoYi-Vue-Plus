@@ -3,6 +3,7 @@ package org.dromara.generator.util;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Dict;
+import org.dromara.common.mybatis.enums.DataBaseType;
 import org.dromara.generator.constant.GenConstants;
 import org.dromara.common.core.utils.DateUtils;
 import org.dromara.common.core.utils.StringUtils;
@@ -118,11 +119,12 @@ public class VelocityUtils {
         templates.add("vm/java/serviceImpl.java.vm");
         templates.add("vm/java/controller.java.vm");
         templates.add("vm/xml/mapper.xml.vm");
-        if (DataBaseHelper.isOracle()) {
+        DataBaseType dataBaseType = DataBaseHelper.getDataBaseType();
+        if (dataBaseType.isOracle()) {
             templates.add("vm/sql/oracle/sql.vm");
-        } else if (DataBaseHelper.isPostgerSql()) {
+        } else if (dataBaseType.isPostgreSql()) {
             templates.add("vm/sql/postgres/sql.vm");
-        } else if (DataBaseHelper.isSqlServer()) {
+        } else if (dataBaseType.isSqlServer()) {
             templates.add("vm/sql/sqlserver/sql.vm");
         } else {
             templates.add("vm/sql/sql.vm");

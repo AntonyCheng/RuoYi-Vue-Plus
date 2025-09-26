@@ -1,16 +1,16 @@
 package org.dromara.system.domain.bo;
 
-import org.dromara.common.core.validate.AddGroup;
-import org.dromara.common.core.validate.EditGroup;
-import org.dromara.system.domain.SysTenant;
 import io.github.linpeilie.annotations.AutoMapper;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import jakarta.validation.constraints.*;
+import org.dromara.common.core.validate.AddGroup;
+import org.dromara.common.core.validate.EditGroup;
+import org.dromara.common.mybatis.core.domain.BaseEntity;
+import org.dromara.system.domain.SysTenant;
 
 import java.util.Date;
-
-import org.dromara.common.mybatis.core.domain.BaseEntity;
 
 /**
  * 租户业务对象 sys_tenant
@@ -62,6 +62,7 @@ public class SysTenantBo extends BaseEntity {
      * 密码（创建系统用户）
      */
     @NotBlank(message = "密码不能为空", groups = { AddGroup.class })
+//    @Pattern(regexp = RegexConstants.PASSWORD, message = "{user.password.format.valid}", groups = { AddGroup.class })
     private String password;
 
     /**

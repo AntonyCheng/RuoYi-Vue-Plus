@@ -1690,15 +1690,15 @@ INSERT sys_menu VALUES (122, N'租户套餐管理', 6, 2, N'tenantPackage', N'sy
 GO
 INSERT sys_menu VALUES (123, N'客户端管理', 1, 11, N'client', N'system/client/index', N'', 1, 0, N'C', N'0', N'0', N'system:client:list', N'international', 103, 1, getdate(), NULL, NULL, N'客户端管理菜单')
 GO
-INSERT sys_menu VALUES (116, N'修改生成配置',  3,   2, N'gen-edit/index/:tableId', N'tool/gen/editTable', N'', 1, 1, N'C', N'1', N'0', N'tool:gen:edit',           N'#',               103, 1, getdate(), null, null, N'');
+INSERT sys_menu VALUES (116, N'修改生成配置',  3,   2, N'gen-edit/index/:tableId', N'tool/gen/editTable', N'', 1, 1, N'C', N'1', N'0', N'tool:gen:edit',           N'#',               103, 1, getdate(), null, null, N'/tool/gen');
 GO
-INSERT sys_menu VALUES (130, N'分配用户',     1,   2, N'role-auth/user/:roleId', N'system/role/authUser', N'', 1, 1, N'C', N'1', N'0', N'system:role:edit',      N'#',               103, 1, getdate(), null, null, N'');
+INSERT sys_menu VALUES (130, N'分配用户',     1,   2, N'role-auth/user/:roleId', N'system/role/authUser', N'', 1, 1, N'C', N'1', N'0', N'system:role:edit',      N'#',               103, 1, getdate(), null, null, N'/system/role');
 GO
-INSERT sys_menu VALUES (131, N'分配角色',     1,   1, N'user-auth/role/:userId', N'system/user/authRole', N'', 1, 1, N'C', N'1', N'0', N'system:user:edit',      N'#',               103, 1, getdate(), null, null, N'');
+INSERT sys_menu VALUES (131, N'分配角色',     1,   1, N'user-auth/role/:userId', N'system/user/authRole', N'', 1, 1, N'C', N'1', N'0', N'system:user:edit',      N'#',               103, 1, getdate(), null, null, N'/system/user');
 GO
-INSERT sys_menu VALUES (132, N'字典数据',     1,   6, N'dict-data/index/:dictId', N'system/dict/data', N'', 1, 1, N'C', N'1', N'0', N'system:dict:list',         N'#',               103, 1, getdate(), null, null, N'');
+INSERT sys_menu VALUES (132, N'字典数据',     1,   6, N'dict-data/index/:dictId', N'system/dict/data', N'', 1, 1, N'C', N'1', N'0', N'system:dict:list',         N'#',               103, 1, getdate(), null, null, N'/system/dict');
 GO
-INSERT sys_menu VALUES (133, N'文件配置管理',  1,   10, N'oss-config/index',              N'system/oss/config', N'', 1, 1, N'C', N'1', N'0', N'system:ossConfig:list',  N'#',                103, 1, getdate(), null, null, N'');
+INSERT sys_menu VALUES (133, N'文件配置管理',  1,   10, N'oss-config/index',              N'system/oss/config', N'', 1, 1, N'C', N'1', N'0', N'system:ossConfig:list',  N'#',                103, 1, getdate(), null, null, N'/system/oss');
 GO
 
 INSERT sys_menu VALUES (117, N'Admin监控', 2, 5, N'Admin', N'monitor/admin/index', N'', 1, 0, N'C', N'0', N'0', N'monitor:admin:list', N'dashboard', 103, 1, getdate(), NULL, NULL, N'Admin监控菜单');

@@ -3,6 +3,7 @@ package org.dromara.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.utils.MapstructUtils;
 import org.dromara.common.core.utils.ObjectUtils;
 import org.dromara.common.core.utils.StringUtils;
@@ -16,7 +17,6 @@ import org.dromara.system.domain.vo.SysUserVo;
 import org.dromara.system.mapper.SysNoticeMapper;
 import org.dromara.system.mapper.SysUserMapper;
 import org.dromara.system.service.ISysNoticeService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -34,6 +34,13 @@ public class SysNoticeServiceImpl implements ISysNoticeService {
     private final SysNoticeMapper baseMapper;
     private final SysUserMapper userMapper;
 
+    /**
+     * 分页查询通知公告列表
+     *
+     * @param notice    查询条件
+     * @param pageQuery 分页参数
+     * @return 通知公告分页列表
+     */
     @Override
     public TableDataInfo<SysNoticeVo> selectPageNoticeList(SysNoticeBo notice, PageQuery pageQuery) {
         LambdaQueryWrapper<SysNotice> lqw = buildQueryWrapper(notice);

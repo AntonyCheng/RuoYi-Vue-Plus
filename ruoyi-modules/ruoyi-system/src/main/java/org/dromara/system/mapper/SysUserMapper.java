@@ -30,7 +30,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
-        @DataColumn(key = "userName", value = "user_id")
+        @DataColumn(key = "userName", value = "create_by")
     })
     default Page<SysUserVo> selectPageUserList(Page<SysUser> page, Wrapper<SysUser> queryWrapper) {
         return this.selectVoPage(page, queryWrapper);
@@ -44,7 +44,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
-        @DataColumn(key = "userName", value = "user_id")
+        @DataColumn(key = "userName", value = "create_by")
     })
     default List<SysUserVo> selectUserList(Wrapper<SysUser> queryWrapper) {
         return this.selectVoList(queryWrapper);
@@ -58,7 +58,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+        @DataColumn(key = "userName", value = "u.create_by")
     })
     List<SysUserExportVo> selectUserExportList(@Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -71,7 +71,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+        @DataColumn(key = "userName", value = "u.create_by")
     })
     Page<SysUserVo> selectAllocatedList(@Param("page") Page<SysUser> page, @Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -83,7 +83,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "d.dept_id"),
-        @DataColumn(key = "userName", value = "u.user_id")
+        @DataColumn(key = "userName", value = "u.create_by")
     })
     Page<SysUserVo> selectUnallocatedList(@Param("page") Page<SysUser> page, @Param(Constants.WRAPPER) Wrapper<SysUser> queryWrapper);
 
@@ -95,7 +95,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
      */
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
-        @DataColumn(key = "userName", value = "user_id")
+        @DataColumn(key = "userName", value = "create_by")
     })
     default long countUserById(Long userId) {
         return this.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getUserId, userId));
@@ -111,7 +111,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
     @Override
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
-        @DataColumn(key = "userName", value = "user_id")
+        @DataColumn(key = "userName", value = "create_by")
     })
     int update(@Param(Constants.ENTITY) SysUser user, @Param(Constants.WRAPPER) Wrapper<SysUser> updateWrapper);
 
@@ -124,7 +124,7 @@ public interface SysUserMapper extends BaseMapperPlus<SysUser, SysUserVo> {
     @Override
     @DataPermission({
         @DataColumn(key = "deptName", value = "dept_id"),
-        @DataColumn(key = "userName", value = "user_id")
+        @DataColumn(key = "userName", value = "create_by")
     })
     int updateById(@Param(Constants.ENTITY) SysUser user);
 

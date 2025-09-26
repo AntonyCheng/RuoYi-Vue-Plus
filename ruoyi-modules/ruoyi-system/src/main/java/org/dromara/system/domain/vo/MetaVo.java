@@ -32,6 +32,11 @@ public class MetaVo {
      */
     private String link;
 
+    /**
+     * 激活菜单
+     */
+    private String activeMenu;
+
     public MetaVo(String title, String icon) {
         this.title = title;
         this.icon = icon;
@@ -55,6 +60,18 @@ public class MetaVo {
         this.noCache = noCache;
         if (StringUtils.ishttp(link)) {
             this.link = link;
+        }
+    }
+
+    public MetaVo(String title, String icon, Boolean noCache, String link, String activeMenu) {
+        this.title = title;
+        this.icon = icon;
+        this.noCache = noCache;
+        if (StringUtils.ishttp(link)) {
+            this.link = link;
+        }
+        if (StringUtils.startWithAnyIgnoreCase(activeMenu, "/")) {
+            this.activeMenu = activeMenu;
         }
     }
 

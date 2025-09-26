@@ -17,6 +17,7 @@ import org.dromara.common.core.utils.SpringUtils;
 import org.dromara.common.core.utils.StreamUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.core.utils.file.FileUtils;
+import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.oss.core.OssClient;
@@ -24,6 +25,7 @@ import org.dromara.common.oss.entity.UploadResult;
 import org.dromara.common.oss.enums.AccessPolicyType;
 import org.dromara.common.oss.factory.OssFactory;
 import org.dromara.system.domain.SysOss;
+import org.dromara.system.domain.SysOssExt;
 import org.dromara.system.domain.bo.SysOssBo;
 import org.dromara.system.domain.vo.SysOssVo;
 import org.dromara.system.mapper.SysOssMapper;
@@ -114,7 +116,7 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
                 }
             }
         }
-        return String.join(StringUtils.SEPARATOR, list);
+        return StringUtils.joinComma(list);
     }
 
     @Override
@@ -199,8 +201,11 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         } catch (IOException e) {
             throw new ServiceException(e.getMessage());
         }
+        SysOssExt ext1 = new SysOssExt();
+        ext1.setFileSize(file.getSize());
+        ext1.setContentType(file.getContentType());
         // 保存文件信息
-        return buildResultEntity(originalfileName, suffix, storage.getConfigKey(), uploadResult);
+        return buildResultEntity(originalfileName, suffix, storage.getConfigKey(), uploadResult, ext1);
     }
 
     /**
@@ -215,18 +220,21 @@ public class SysOssServiceImpl implements ISysOssService, OssService {
         String suffix = StringUtils.substring(originalfileName, originalfileName.lastIndexOf("."), originalfileName.length());
         OssClient storage = OssFactory.instance();
         UploadResult uploadResult = storage.uploadSuffix(file, suffix);
+        SysOssExt ext1 = new SysOssExt();
+        ext1.setFileSize(file.length());
         // 保存文件信息
-        return buildResultEntity(originalfileName, suffix, storage.getConfigKey(), uploadResult);
+        return buildResultEntity(originalfileName, suffix, storage.getConfigKey(), uploadResult, ext1);
     }
 
     @NotNull
-    private SysOssVo buildResultEntity(String originalfileName, String suffix, String configKey, UploadResult uploadResult) {
+    private SysOssVo buildResultEntity(String originalfileName, String suffix, String configKey, UploadResult uploadResult, SysOssExt ext1) {
         SysOss oss = new SysOss();
         oss.setUrl(uploadResult.getUrl());
         oss.setFileSuffix(suffix);
         oss.setFileName(uploadResult.getFilename());
         oss.setOriginalName(originalfileName);
         oss.setService(configKey);
+        oss.setExt1(JsonUtils.toJsonString(ext1));
         baseMapper.insert(oss);
         SysOssVo sysOssVo = MapstructUtils.convert(oss, SysOssVo.class);
         return this.matchingUrl(sysOssVo);
