@@ -7,7 +7,9 @@ import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
+import cn.dev33.satoken.util.SaTokenConsts;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.dromara.common.core.constant.HttpStatus;
@@ -55,6 +57,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                     // 对未排除的路径进行检查
                     .check(() -> {
                         HttpServletRequest request = ServletUtils.getRequest();
+                        HttpServletResponse response = ServletUtils.getResponse();
+                        response.setContentType(SaTokenConsts.CONTENT_TYPE_APPLICATION_JSON);
                         // 检查是否登录 是否有token
                         StpUtil.checkLogin();
 
@@ -94,7 +98,11 @@ public class SecurityConfig implements WebMvcConfigurer {
             .setAuth(obj -> {
                 SaHttpBasicUtil.check(username + ":" + password);
             })
-            .setError(e -> SaResult.error(e.getMessage()).setCode(HttpStatus.UNAUTHORIZED));
+            .setError(e -> {
+                HttpServletResponse response = ServletUtils.getResponse();
+                response.setContentType(SaTokenConsts.CONTENT_TYPE_APPLICATION_JSON);
+                return SaResult.error(e.getMessage()).setCode(HttpStatus.UNAUTHORIZED);
+            });
     }
 
 }

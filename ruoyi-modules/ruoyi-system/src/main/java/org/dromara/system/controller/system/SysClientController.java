@@ -1,26 +1,27 @@
 package org.dromara.system.controller.system;
 
-import java.util.List;
-
-import lombok.RequiredArgsConstructor;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.constraints.*;
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.validation.annotation.Validated;
-import org.dromara.common.idempotent.annotation.RepeatSubmit;
-import org.dromara.common.log.annotation.Log;
-import org.dromara.common.web.core.BaseController;
-import org.dromara.common.mybatis.core.page.PageQuery;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.RequiredArgsConstructor;
 import org.dromara.common.core.domain.R;
 import org.dromara.common.core.validate.AddGroup;
 import org.dromara.common.core.validate.EditGroup;
-import org.dromara.common.log.enums.BusinessType;
 import org.dromara.common.excel.utils.ExcelUtil;
-import org.dromara.system.domain.vo.SysClientVo;
-import org.dromara.system.domain.bo.SysClientBo;
-import org.dromara.system.service.ISysClientService;
+import org.dromara.common.idempotent.annotation.RepeatSubmit;
+import org.dromara.common.log.annotation.Log;
+import org.dromara.common.log.enums.BusinessType;
+import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.web.core.BaseController;
+import org.dromara.system.domain.bo.SysClientBo;
+import org.dromara.system.domain.vo.SysClientVo;
+import org.dromara.system.service.ISysClientService;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 客户端管理
@@ -76,6 +77,9 @@ public class SysClientController extends BaseController {
     @RepeatSubmit()
     @PostMapping()
     public R<Void> add(@Validated(AddGroup.class) @RequestBody SysClientBo bo) {
+        if (!sysClientService.checkClickKeyUnique(bo)) {
+            return R.fail("新增客户端'" + bo.getClientKey() + "'失败，客户端key已存在");
+        }
         return toAjax(sysClientService.insertByBo(bo));
     }
 
@@ -87,6 +91,9 @@ public class SysClientController extends BaseController {
     @RepeatSubmit()
     @PutMapping()
     public R<Void> edit(@Validated(EditGroup.class) @RequestBody SysClientBo bo) {
+        if (!sysClientService.checkClickKeyUnique(bo)) {
+            return R.fail("修改客户端'" + bo.getClientKey() + "'失败，客户端key已存在");
+        }
         return toAjax(sysClientService.updateByBo(bo));
     }
 

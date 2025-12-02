@@ -1,9 +1,9 @@
 package org.dromara.system.service;
 
-import org.dromara.system.domain.vo.SysTenantVo;
-import org.dromara.system.domain.bo.SysTenantBo;
-import org.dromara.common.mybatis.core.page.TableDataInfo;
 import org.dromara.common.mybatis.core.page.PageQuery;
+import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.system.domain.bo.SysTenantBo;
+import org.dromara.system.domain.vo.SysTenantVo;
 
 import java.util.Collection;
 import java.util.List;
@@ -84,4 +84,9 @@ public interface ISysTenantService {
      * 同步租户字典
      */
     void syncTenantDict();
+
+    /**
+     * 同步租户参数配置
+     */
+    void syncTenantConfig();
 }
