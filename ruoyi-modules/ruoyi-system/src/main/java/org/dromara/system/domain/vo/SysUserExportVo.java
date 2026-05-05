@@ -34,13 +34,13 @@ public class SysUserExportVo implements Serializable {
     /**
      * 用户账号
      */
-    @ExcelProperty(value = "登录名称")
+    @ExcelProperty(value = "用户账号")
     private String userName;
 
     /**
      * 用户昵称
      */
-    @ExcelProperty(value = "用户名称")
+    @ExcelProperty(value = "用户昵称")
     private String nickName;
 
     /**
@@ -63,9 +63,9 @@ public class SysUserExportVo implements Serializable {
     private String sex;
 
     /**
-     * 帐号状态（0正常 1停用）
+     * 账号状态（0正常 1停用）
      */
-    @ExcelProperty(value = "帐号状态", converter = ExcelDictConvert.class)
+    @ExcelProperty(value = "账号状态", converter = ExcelDictConvert.class)
     @ExcelDictFormat(dictType = "sys_normal_disable")
     private String status;
 

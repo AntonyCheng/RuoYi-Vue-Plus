@@ -7,7 +7,7 @@ import org.dromara.common.translation.constant.TransConstant;
 import org.dromara.common.translation.core.TranslationInterface;
 
 /**
- * 用户名称翻译实现
+ * 用户昵称翻译实现
  *
  * @author may
  */
@@ -20,7 +20,7 @@ public class NicknameTranslationImpl implements TranslationInterface<String> {
     @Override
     public String translation(Object key, String other) {
         if (key instanceof Long id) {
-            return userService.selectNicknameByIds(id.toString());
+            return userService.selectNicknameById(id);
         } else if (key instanceof String ids) {
             return userService.selectNicknameByIds(ids);
         }

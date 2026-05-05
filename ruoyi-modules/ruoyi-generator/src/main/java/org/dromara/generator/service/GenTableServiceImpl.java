@@ -8,7 +8,6 @@ import com.baomidou.dynamic.datasource.annotation.DS;
 import com.baomidou.dynamic.datasource.annotation.DSTransactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.incrementer.IdentifierGenerator;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +27,7 @@ import org.dromara.common.core.utils.file.FileUtils;
 import org.dromara.common.json.utils.JsonUtils;
 import org.dromara.common.mybatis.core.page.PageQuery;
 import org.dromara.common.mybatis.core.page.TableDataInfo;
+import org.dromara.common.mybatis.utils.IdGeneratorUtil;
 import org.dromara.generator.constant.GenConstants;
 import org.dromara.generator.domain.GenTable;
 import org.dromara.generator.domain.GenTableColumn;
@@ -60,7 +60,6 @@ public class GenTableServiceImpl implements IGenTableService {
 
     private final GenTableMapper baseMapper;
     private final GenTableColumnMapper genTableColumnMapper;
-    private final IdentifierGenerator identifierGenerator;
 
     private static final String[] TABLE_IGNORE = new String[]{"sj_", "flow_", "gen_"};
 
@@ -322,7 +321,7 @@ public class GenTableServiceImpl implements IGenTableService {
         GenTable table = baseMapper.selectGenTableById(tableId);
         List<Long> menuIds = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            menuIds.add(identifierGenerator.nextId(null).longValue());
+            menuIds.add(IdGeneratorUtil.nextLongId());
         }
         table.setMenuIds(menuIds);
         // 设置主键列信息
@@ -332,7 +331,7 @@ public class GenTableServiceImpl implements IGenTableService {
         VelocityContext context = VelocityUtils.prepareContext(table);
 
         // 获取模板列表
-        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory());
+        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory(), table.getDataName());
         for (String template : templates) {
             // 渲染模板
             StringWriter sw = new StringWriter();
@@ -375,7 +374,7 @@ public class GenTableServiceImpl implements IGenTableService {
         VelocityContext context = VelocityUtils.prepareContext(table);
 
         // 获取模板列表
-        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory());
+        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory(), table.getDataName());
         for (String template : templates) {
             if (!StringUtils.containsAny(template, "sql.vm", "api.ts.vm", "types.ts.vm", "index.vue.vm", "index-tree.vue.vm")) {
                 // 渲染模板
@@ -468,7 +467,7 @@ public class GenTableServiceImpl implements IGenTableService {
         GenTable table = baseMapper.selectGenTableById(tableId);
         List<Long> menuIds = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            menuIds.add(identifierGenerator.nextId(null).longValue());
+            menuIds.add(IdGeneratorUtil.nextLongId());
         }
         table.setMenuIds(menuIds);
         // 设置主键列信息
@@ -479,7 +478,7 @@ public class GenTableServiceImpl implements IGenTableService {
         VelocityContext context = VelocityUtils.prepareContext(table);
 
         // 获取模板列表
-        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory());
+        List<String> templates = VelocityUtils.getTemplateList(table.getTplCategory(), table.getDataName());
         for (String template : templates) {
             // 渲染模板
             StringWriter sw = new StringWriter();
@@ -524,6 +523,9 @@ public class GenTableServiceImpl implements IGenTableService {
      * @param table 业务表信息
      */
     public void setPkColumn(GenTable table) {
+        if (CollUtil.isEmpty(table.getColumns())) {
+            throw new ServiceException("表【" + table.getTableName() + "】字段为空，请检查表结构");
+        }
         for (GenTableColumn column : table.getColumns()) {
             if (column.isPk()) {
                 table.setPkColumn(column);

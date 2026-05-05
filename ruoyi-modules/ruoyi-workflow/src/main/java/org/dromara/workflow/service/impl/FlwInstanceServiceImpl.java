@@ -111,8 +111,14 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Override
     public FlowInstanceVo queryByBusinessId(Long businessId) {
         FlowInstance instance = this.selectInstByBusinessId(Convert.toStr(businessId));
+        if (ObjectUtil.isNull(instance)) {
+            throw new ServiceException(ExceptionCons.NOT_FOUNT_INSTANCE);
+        }
         FlowInstanceVo instanceVo = BeanUtil.toBean(instance, FlowInstanceVo.class);
         Definition definition = defService.getById(instanceVo.getDefinitionId());
+        if (ObjectUtil.isNull(definition)) {
+            throw new ServiceException(ExceptionCons.NOT_FOUNT_DEF);
+        }
         instanceVo.setFlowName(definition.getFlowName());
         instanceVo.setFlowCode(definition.getFlowCode());
         instanceVo.setVersion(definition.getVersion());
@@ -181,12 +187,14 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean deleteByBusinessIds(List<Long> businessIds) {
-        List<FlowInstance> flowInstances = flowInstanceMapper.selectList(new LambdaQueryWrapper<FlowInstance>().in(FlowInstance::getBusinessId, StreamUtils.toList(businessIds, Convert::toStr)));
+    public boolean deleteByBusinessIds(List<String> businessIds) {
+        List<FlowInstance> flowInstances = flowInstanceMapper.selectList(new LambdaQueryWrapper<FlowInstance>().in(FlowInstance::getBusinessId, businessIds));
         if (CollUtil.isEmpty(flowInstances)) {
             log.warn("未找到对应的流程实例信息，无法执行删除操作。");
             return false;
         }
+        // 发送事件
+        processDeleteHandler(flowInstances);
         return insService.remove(StreamUtils.toList(flowInstances, FlowInstance::getId));
     }
 
@@ -199,39 +207,15 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteByInstanceIds(List<Long> instanceIds) {
         // 获取实例信息
-        List<Instance> instances = insService.getByIds(instanceIds);
-        if (CollUtil.isEmpty(instances)) {
+        List<FlowInstance> flowInstances = flowInstanceMapper.selectByIds(instanceIds);
+        if (CollUtil.isEmpty(flowInstances)) {
             log.warn("未找到对应的流程实例信息，无法执行删除操作。");
             return false;
         }
-        // 获取定义信息
-        Map<Long, Definition> definitionMap = StreamUtils.toMap(
-            defService.getByIds(StreamUtils.toList(instances, Instance::getDefinitionId)),
-            Definition::getId,
-            Function.identity()
-        );
-
-        try {
-            // 逐一触发删除事件
-            instances.forEach(instance -> {
-                Definition definition = definitionMap.get(instance.getDefinitionId());
-                if (ObjectUtil.isNull(definition)) {
-                    log.warn("实例 ID: {} 对应的流程定义信息未找到，跳过删除事件触发。", instance.getId());
-                    return;
-                }
-                flowProcessEventHandler.processDeleteHandler(definition.getFlowCode(), instance.getBusinessId());
-            });
-            // 删除实例
-            boolean remove = insService.remove(instanceIds);
-            if (!remove) {
-                log.warn("删除流程实例失败!");
-                throw new ServiceException("删除流程实例失败");
-            }
-        } catch (Exception e) {
-            log.warn("操作失败!{}", e.getMessage());
-            throw new ServiceException(e.getMessage());
-        }
-        return true;
+        // 发送事件
+        processDeleteHandler(flowInstances);
+        // 删除实例
+        return insService.remove(instanceIds);
     }
 
     /**
@@ -243,39 +227,50 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Transactional(rollbackFor = Exception.class)
     public boolean deleteHisByInstanceIds(List<Long> instanceIds) {
         // 获取实例信息
-        List<Instance> instances = insService.getByIds(instanceIds);
-        if (CollUtil.isEmpty(instances)) {
+        List<FlowInstance> flowInstances = flowInstanceMapper.selectByIds(instanceIds);
+        if (CollUtil.isEmpty(flowInstances)) {
             log.warn("未找到对应的流程实例信息，无法执行删除操作。");
             return false;
         }
+        // 发送事件
+        processDeleteHandler(flowInstances);
+        List<FlowTask> flowTaskList = flwTaskService.selectByInstIds(instanceIds);
+        if (CollUtil.isNotEmpty(flowTaskList)) {
+            FlowEngine.userService().deleteByTaskIds(StreamUtils.toList(flowTaskList, FlowTask::getId));
+        }
+        FlowEngine.taskService().deleteByInsIds(instanceIds);
+        FlowEngine.hisTaskService().deleteByInsIds(instanceIds);
+        FlowEngine.insService().removeByIds(instanceIds);
+        return true;
+    }
+
+
+    private void processDeleteHandler(List<FlowInstance> flowInstances) {
+
+        String userId = LoginHelper.getUserIdStr();
+        for (FlowInstance flowInstance : flowInstances) {
+            //如果创建人与当前登陆人一致或者当前登陆人为管理员才能删除
+            if (LoginHelper.isSuperAdmin() || flowInstance.getCreateBy().equals(userId)) {
+                continue;
+            }
+            throw new ServiceException("权限不足，无法删除流程实例信息!");
+        }
         // 获取定义信息
         Map<Long, Definition> definitionMap = StreamUtils.toMap(
-            defService.getByIds(StreamUtils.toList(instances, Instance::getDefinitionId)),
+            defService.getByIds(StreamUtils.toList(flowInstances, Instance::getDefinitionId)),
             Definition::getId,
             Function.identity()
         );
-        try {
-            // 逐一触发删除事件
-            instances.forEach(instance -> {
-                Definition definition = definitionMap.get(instance.getDefinitionId());
-                if (ObjectUtil.isNull(definition)) {
-                    log.warn("实例 ID: {} 对应的流程定义信息未找到，跳过删除事件触发。", instance.getId());
-                    return;
-                }
-                flowProcessEventHandler.processDeleteHandler(definition.getFlowCode(), instance.getBusinessId());
-            });
-            List<FlowTask> flowTaskList = flwTaskService.selectByInstIds(instanceIds);
-            if (CollUtil.isNotEmpty(flowTaskList)) {
-                FlowEngine.userService().deleteByTaskIds(StreamUtils.toList(flowTaskList, FlowTask::getId));
+
+        // 逐一触发删除事件
+        flowInstances.forEach(instance -> {
+            Definition definition = definitionMap.get(instance.getDefinitionId());
+            if (ObjectUtil.isNull(definition)) {
+                log.warn("实例 ID: {} 对应的流程定义信息未找到，跳过删除事件触发。", instance.getId());
+                return;
             }
-            FlowEngine.taskService().deleteByInsIds(instanceIds);
-            FlowEngine.hisTaskService().deleteByInsIds(instanceIds);
-            FlowEngine.insService().removeByIds(instanceIds);
-        } catch (Exception e) {
-            log.warn("操作失败!{}", e.getMessage());
-            throw new ServiceException(e.getMessage());
-        }
-        return true;
+            flowProcessEventHandler.processDeleteHandler(definition.getFlowCode(), instance.getBusinessId());
+        });
     }
 
     /**
@@ -286,29 +281,27 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean cancelProcessApply(FlowCancelBo bo) {
-        try {
-            Instance instance = selectInstByBusinessId(bo.getBusinessId());
-            if (instance == null) {
-                throw new ServiceException(ExceptionCons.NOT_FOUNT_INSTANCE);
-            }
-            Definition definition = defService.getById(instance.getDefinitionId());
-            if (definition == null) {
-                throw new ServiceException(ExceptionCons.NOT_FOUNT_DEF);
-            }
-            String message = bo.getMessage();
-            String userIdStr = LoginHelper.getUserIdStr();
-            BusinessStatusEnum.checkCancelStatus(instance.getFlowStatus());
-            FlowParams flowParams = FlowParams.build()
-                .message(message)
-                .flowStatus(BusinessStatusEnum.CANCEL.getStatus())
-                .hisStatus(BusinessStatusEnum.CANCEL.getStatus())
-                .handler(userIdStr)
-                .ignore(true);
-            taskService.revoke(instance.getId(), flowParams);
-        } catch (Exception e) {
-            log.error("撤销失败: {}", e.getMessage(), e);
-            throw new ServiceException(e.getMessage());
+        Instance instance = selectInstByBusinessId(bo.getBusinessId());
+        if (instance == null) {
+            throw new ServiceException(ExceptionCons.NOT_FOUNT_INSTANCE);
         }
+        Definition definition = defService.getById(instance.getDefinitionId());
+        if (definition == null) {
+            throw new ServiceException(ExceptionCons.NOT_FOUNT_DEF);
+        }
+        String userIdStr = LoginHelper.getUserIdStr();
+        if (!LoginHelper.isSuperAdmin() && !instance.getCreateBy().equals(userIdStr)) {
+            throw new ServiceException("权限不足，无法撤销流程!");
+        }
+        String message = bo.getMessage();
+        BusinessStatusEnum.checkCancelStatus(instance.getFlowStatus());
+        FlowParams flowParams = FlowParams.build()
+            .message(message)
+            .flowStatus(BusinessStatusEnum.CANCEL.getStatus())
+            .hisStatus(BusinessStatusEnum.CANCEL.getStatus())
+            .handler(userIdStr)
+            .ignore(true);
+        taskService.revoke(instance.getId(), flowParams);
         return true;
     }
 
@@ -403,6 +396,9 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Override
     public Map<String, Object> instanceVariable(Long instanceId) {
         FlowInstance flowInstance = flowInstanceMapper.selectById(instanceId);
+        if (ObjectUtil.isNull(flowInstance)) {
+            throw new ServiceException(ExceptionCons.NOT_FOUNT_INSTANCE);
+        }
         Map<String, Object> variableMap = Optional.ofNullable(flowInstance.getVariableMap()).orElse(Collections.emptyMap());
         List<Map<String, Object>> variableList = variableMap.entrySet().stream()
             .map(entry -> Map.of("key", entry.getKey(), "value", entry.getValue()))
@@ -422,20 +418,14 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
         if (flowInstance == null) {
             throw new ServiceException(ExceptionCons.NOT_FOUNT_INSTANCE);
         }
-        try {
-            Map<String, Object> variableMap = new HashMap<>(Optional.ofNullable(flowInstance.getVariableMap()).orElse(Collections.emptyMap()));
-            if (!variableMap.containsKey(bo.getKey())) {
-                log.error("变量不存在: {}", bo.getKey());
-                return false;
-            }
-            variableMap.put(bo.getKey(), bo.getValue());
-            flowInstance.setVariable(FlowEngine.jsonConvert.objToStr(variableMap));
-            flowInstanceMapper.updateById(flowInstance);
-        } catch (Exception e) {
-            log.error("设置流程变量失败: {}", e.getMessage(), e);
-            throw new ServiceException(e.getMessage());
+        Map<String, Object> variableMap = new HashMap<>(Optional.ofNullable(flowInstance.getVariableMap()).orElse(Collections.emptyMap()));
+        if (!variableMap.containsKey(bo.getKey())) {
+            log.error("变量不存在: {}", bo.getKey());
+            return false;
         }
-        return true;
+        variableMap.put(bo.getKey(), bo.getValue());
+        flowInstance.setVariable(FlowEngine.jsonConvert.objToStr(variableMap));
+        return flowInstanceMapper.updateById(flowInstance) > 0;
     }
 
     /**
@@ -480,21 +470,16 @@ public class FlwInstanceServiceImpl implements IFlwInstanceService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean processInvalid(FlowInvalidBo bo) {
-        try {
-            Instance instance = insService.getById(bo.getId());
-            if (instance != null) {
-                BusinessStatusEnum.checkInvalidStatus(instance.getFlowStatus());
-            }
-            FlowParams flowParams = FlowParams.build()
-                .message(bo.getComment())
-                .flowStatus(BusinessStatusEnum.INVALID.getStatus())
-                .hisStatus(TaskStatusEnum.INVALID.getStatus())
-                .ignore(true);
-            taskService.terminationByInsId(bo.getId(), flowParams);
-            return true;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            throw new ServiceException(e.getMessage());
+        Instance instance = insService.getById(bo.getId());
+        if (instance != null) {
+            BusinessStatusEnum.checkInvalidStatus(instance.getFlowStatus());
         }
+        FlowParams flowParams = FlowParams.build()
+            .message(bo.getComment())
+            .flowStatus(BusinessStatusEnum.INVALID.getStatus())
+            .hisStatus(TaskStatusEnum.INVALID.getStatus())
+            .ignore(true);
+        taskService.terminationByInsId(bo.getId(), flowParams);
+        return true;
     }
 }

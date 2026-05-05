@@ -27,7 +27,10 @@
                 d.flow_code,
                 d.form_custom,
                 d.category,
-                COALESCE(t.form_path, d.form_path) as form_path,
+                COALESCE(
+                    NULLIF(TRIM(t.form_path), ''),
+                    NULLIF(TRIM(d.form_path), '')
+                ) AS form_path,
                 d.version,
                 uu.processed_by,
                 uu.type,
@@ -85,6 +88,7 @@
               and b.del_flag = '0'
               and c.del_flag = '0'
               and a.node_type in ('1','3','4')
+              and a.flow_status <![CDATA[ <> ]]> 'copy'
         ) t
         ${ew.getCustomSqlSegment}
     </select>

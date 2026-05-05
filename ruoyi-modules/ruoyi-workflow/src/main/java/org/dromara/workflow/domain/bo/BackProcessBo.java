@@ -1,6 +1,5 @@
 package org.dromara.workflow.domain.bo;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.dromara.common.core.validate.AddGroup;
@@ -62,7 +61,8 @@ public class BackProcessBo implements Serializable {
 
     public Map<String, Object> getVariables() {
         if (variables == null) {
-            return new HashMap<>(16);
+            variables = new HashMap<>(16);
+            return variables;
         }
         variables.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
         return variables;

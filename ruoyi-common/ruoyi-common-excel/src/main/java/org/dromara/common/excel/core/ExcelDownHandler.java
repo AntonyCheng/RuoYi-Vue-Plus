@@ -23,6 +23,7 @@ import org.dromara.common.core.utils.SpringUtils;
 import org.dromara.common.core.utils.StreamUtils;
 import org.dromara.common.core.utils.StringUtils;
 import org.dromara.common.excel.annotation.ExcelDictFormat;
+import org.dromara.common.excel.annotation.ExcelDynamicOptions;
 import org.dromara.common.excel.annotation.ExcelEnumFormat;
 
 import java.lang.reflect.Field;
@@ -117,11 +118,21 @@ public class ExcelDownHandler implements SheetWriteHandler {
                 ExcelEnumFormat format = field.getDeclaredAnnotation(ExcelEnumFormat.class);
                 List<Object> values = EnumUtil.getFieldValues(format.enumClass(), format.textField());
                 options = StreamUtils.toList(values, Convert::toStr);
+            } else if (field.isAnnotationPresent(ExcelDynamicOptions.class)) {
+                // 处理动态下拉选项
+                ExcelDynamicOptions dynamicOptions = field.getDeclaredAnnotation(ExcelDynamicOptions.class);
+                // 获取提供者实例
+                ExcelOptionsProvider provider = SpringUtils.getBean(dynamicOptions.providerClass());
+                Set<String> providerOptions = provider.getOptions();
+                if (CollUtil.isNotEmpty(providerOptions)) {
+                    options = new ArrayList<>(providerOptions);
+                }
             }
             if (ObjectUtil.isNotEmpty(options)) {
                 // 仅当下拉可选项不为空时执行
-                if (options.size() > 20) {
-                    // 这里限制如果可选项大于20，则使用额外表形式
+                int totalCharacter = options.stream().mapToInt(String::length).sum() + options.size();
+                if (options.size() > 20 || totalCharacter > 255) {
+                    // 这里限制如果可选项大于20 或 总字符数超过255，则使用额外表形式
                     dropDownWithSheet(helper, workbook, sheet, index, options);
                 } else {
                     // 否则使用固定值形式

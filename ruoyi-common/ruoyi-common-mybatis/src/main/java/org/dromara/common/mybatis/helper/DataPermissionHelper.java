@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * @version 3.5.0
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings("unchecked cast")
+@SuppressWarnings("unchecked")
 public class DataPermissionHelper {
 
     private static final String DATA_PERMISSION_KEY = "data:permission";
@@ -112,7 +112,7 @@ public class DataPermissionHelper {
     /**
      * 开启忽略数据权限(开启后需手动调用 {@link #disableIgnore()} 关闭)
      */
-    public static void enableIgnore() {
+    private static void enableIgnore() {
         IgnoreStrategy ignoreStrategy = getIgnoreStrategy();
         if (ObjectUtil.isNull(ignoreStrategy)) {
             InterceptorIgnoreHelper.handle(IgnoreStrategy.builder().dataPermission(true).build());
@@ -126,7 +126,7 @@ public class DataPermissionHelper {
     /**
      * 关闭忽略数据权限
      */
-    public static void disableIgnore() {
+    private static void disableIgnore() {
         IgnoreStrategy ignoreStrategy = getIgnoreStrategy();
         if (ObjectUtil.isNotNull(ignoreStrategy)) {
             boolean noOtherIgnoreStrategy = !Boolean.TRUE.equals(ignoreStrategy.getDynamicTableName())

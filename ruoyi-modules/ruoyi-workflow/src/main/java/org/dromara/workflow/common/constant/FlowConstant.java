@@ -24,26 +24,6 @@ public interface FlowConstant {
     String INITIATOR_DEPT_ID = "initiatorDeptId";
 
     /**
-     * 委托
-     */
-    String DELEGATE_TASK = "delegateTask";
-
-    /**
-     * 转办
-     */
-    String TRANSFER_TASK = "transferTask";
-
-    /**
-     * 加签
-     */
-    String ADD_SIGNATURE = "addSignature";
-
-    /**
-     * 减签
-     */
-    String REDUCTION_SIGNATURE = "reductionSignature";
-
-    /**
      * 流程分类Id转名称
      */
     String CATEGORY_ID_TO_NAME = "category_id_to_name";
@@ -92,4 +72,20 @@ public interface FlowConstant {
      * 业务编码
      */
     String BUSINESS_CODE = "businessCode";
+
+    /**
+     * 忽略-办理权限校验（true：忽略，false：不忽略）
+     */
+    String VAR_IGNORE = "ignore";
+
+    /**
+     * 忽略-委派处理（true：忽略，false：不忽略）
+     */
+    String VAR_IGNORE_DEPUTE = "ignoreDepute";
+
+    /**
+     * 忽略-会签票签处理（true：忽略，false：不忽略）
+     */
+    String VAR_IGNORE_COOPERATE = "ignoreCooperate";
+
 }

@@ -29,7 +29,10 @@ public class CellMergeHandler {
         // 行合并开始下标
         this.rowIndex = hasTitle ? 1 : 0;
     }
-
+    private CellMergeHandler(final boolean hasTitle, final int rowIndex) {
+        this.hasTitle = hasTitle;
+        this.rowIndex = hasTitle ? rowIndex : 0;
+    }
     @SneakyThrows
     public List<CellRangeAddress> handle(List<?> rows) {
         // 如果入参为空集合则返回空集
@@ -61,8 +64,10 @@ public class CellMergeHandler {
                 // 当前行数据字段值
                 Object currentRowObjFieldVal = ReflectUtils.invokeGetter(currentRowObj, field.getName());
 
-                // 空值跳过不处理
-                if (currentRowObjFieldVal == null || "".equals(currentRowObjFieldVal)) {
+                // 空值视为合并中断，需要先收口上一段合并区间
+                if (isBlankCell(currentRowObjFieldVal)) {
+                    appendMergeResult(result, rowRepeatCellMap.get(field), i - 1, colNum);
+                    rowRepeatCellMap.remove(field);
                     continue;
                 }
 
@@ -75,7 +80,6 @@ public class CellMergeHandler {
                 // 获取 单元格合并Map 中字段值
                 RepeatCell repeatCell = rowRepeatCellMap.get(field);
                 Object cellValue = repeatCell.value();
-                int current = repeatCell.current();
 
                 // 检查是否满足合并条件
                 // currentRowObj 当前行数据
@@ -83,29 +87,14 @@ public class CellMergeHandler {
                 // cellMerge 当前行字段合并注解
                 boolean merge = isMerge(currentRowObj, rows.get(i - 1), cellMerge);
 
-                // 是否添加到结果集
-                boolean isAddResult = false;
-                // 最新行
-                int lastRow = i + rowIndex - 1;
-
                 // 如果当前行字段值和缓存中的字段值不相等，或不满足合并条件，则替换
                 if (!currentRowObjFieldVal.equals(cellValue) || !merge) {
+                    appendMergeResult(result, repeatCell, i - 1, colNum);
                     rowRepeatCellMap.put(field, RepeatCell.of(currentRowObjFieldVal, i));
-                    isAddResult = true;
-                }
-
-                // 如果最后一行不能合并，检查之前的数据是否需要合并；如果最后一行可以合并，则直接合并到最后
-                if (i == rows.size() - 1) {
-                    isAddResult = true;
-                    if (i > current) {
-                        lastRow = i + rowIndex;
-                    }
-                }
-
-                if (isAddResult && i > current) {
-                    result.add(new CellRangeAddress(current + rowIndex, lastRow, colNum, colNum));
                 }
             }
+            appendMergeResult(result, rowRepeatCellMap.get(field), rows.size() - 1, colNum);
+            rowRepeatCellMap.remove(field);
         }
         return result;
     }
@@ -147,17 +136,28 @@ public class CellMergeHandler {
     private boolean isMerge(Object currentRow, Object preRow, CellMerge cellMerge) {
         final String[] mergeBy = cellMerge.mergeBy();
         if (StrUtil.isAllNotBlank(mergeBy)) {
-            //比对当前行和上一行的各个属性值一一比对 如果全为真 则为真
+            // 比对当前行和上一行的各个属性值一一比对 如果全为真 则为真
             for (String fieldName : mergeBy) {
                 final Object valCurrent = ReflectUtil.getFieldValue(currentRow, fieldName);
                 final Object valPre = ReflectUtil.getFieldValue(preRow, fieldName);
                 if (!Objects.equals(valPre, valCurrent)) {
-                    //依赖字段如有任一不等值,则标记为不可合并
+                    // 依赖字段如有任一不等值,则标记为不可合并
                     return false;
                 }
             }
         }
         return true;
+    }
+
+    private boolean isBlankCell(Object value) {
+        return value == null || StrUtil.isBlankIfStr(value);
+    }
+
+    private void appendMergeResult(List<CellRangeAddress> result, RepeatCell repeatCell, int endIndex, int colNum) {
+        if (repeatCell == null || endIndex <= repeatCell.current()) {
+            return;
+        }
+        result.add(new CellRangeAddress(repeatCell.current() + rowIndex, endIndex + rowIndex, colNum, colNum));
     }
 
     /**
@@ -176,6 +176,16 @@ public class CellMergeHandler {
         static FieldColumnIndex of(int colIndex, CellMerge cellMerge) {
             return new FieldColumnIndex(colIndex, cellMerge);
         }
+    }
+    /**
+     * 创建一个单元格合并处理器实例
+     *
+     * @param hasTitle 是否合并标题
+     * @param rowIndex 行索引
+     * @return 单元格合并处理器
+     */
+    public static CellMergeHandler of(final boolean hasTitle, final int rowIndex) {
+        return new CellMergeHandler(hasTitle, rowIndex);
     }
 
     /**
